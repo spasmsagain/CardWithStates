@@ -542,7 +542,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.3.5',
+                version: '1.3.6',
                 dev: false
             };
             console.log('%c' + this.meta.name + ' by OKViz ' + this.meta.version + (this.meta.dev ? ' (BETA)' : ''), 'font-weight:bold');
@@ -573,11 +573,11 @@ module powerbi.extensibility.visual {
 
             let formatter = OKVizUtility.Formatter.getFormatter({
                 format: dataPoint.format,
-                value: this.model.settings.dataLabel.unit,
+                value: (this.model.settings.dataLabel.unit == 1 ? this.model.value: this.model.settings.dataLabel.unit),
                 formatSingleValues: (this.model.settings.dataLabel.unit == 0),
-                allowFormatBeautification: true,
+                allowFormatBeautification: false,
                 precision: this.model.settings.dataLabel.precision,
-                displayUnitSystemType: 2, //Default = 0, Verbose = 1, WholeUnits = 2, DataLabels = 3
+                displayUnitSystemType: 3,
                 cultureSelector: this.model.settings.dataLabel.locale
             }); 
 
