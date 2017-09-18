@@ -347,7 +347,7 @@ module powerbi.extensibility.visual {
                             value: value,
                             displayName: displayName,
                             category: categoryValue,
-                            format: dataValue.source.format,
+                            format: (dataValue.source.format !== undefined ? dataValue.source.format : null),
                             selectionId: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
                         };
 
@@ -515,6 +515,9 @@ module powerbi.extensibility.visual {
             }
         }
 
+        if (dataPoints.length == 1)
+            aggregatedValue = dataPoints[0].value;
+
         return {
             dataPoints: dataPoints,
             value: aggregatedValue,
@@ -542,7 +545,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.3.6',
+                version: '1.3.7',
                 dev: false
             };
             console.log('%c' + this.meta.name + ' by OKViz ' + this.meta.version + (this.meta.dev ? ' (BETA)' : ''), 'font-weight:bold');
@@ -574,7 +577,7 @@ module powerbi.extensibility.visual {
             let formatter = OKVizUtility.Formatter.getFormatter({
                 format: dataPoint.format,
                 value: (this.model.settings.dataLabel.unit == 1 ? this.model.value: this.model.settings.dataLabel.unit),
-                formatSingleValues: (this.model.settings.dataLabel.unit == 0),
+                formatSingleValues: (this.model.settings.dataLabel.unit === 0),
                 allowFormatBeautification: false,
                 precision: this.model.settings.dataLabel.precision,
                 displayUnitSystemType: 3,
@@ -755,7 +758,7 @@ module powerbi.extensibility.visual {
                 let rawCategoryLabelValue = dataPoint.displayName;
                 if (this.model.settings.categoryLabel.type == 'measure_with_aggregation') {
                     if (this.model.settings.dataLabel.aggregate == 'last')
-                        rawCategoryLabelValue = dataPoint.category + ': ' + rawCategoryLabelValue;
+                        rawCategoryLabelValue = (dataPoint.category != '' ? dataPoint.category + ': ' : '') + rawCategoryLabelValue;
                     else if (this.model.settings.dataLabel.aggregate == 'avg')
                         rawCategoryLabelValue = 'Average of ' + rawCategoryLabelValue;
                     else if (this.model.settings.dataLabel.aggregate == 'min')
