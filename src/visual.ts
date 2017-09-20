@@ -583,14 +583,14 @@ module powerbi.extensibility.visual {
 
             let formatter = OKVizUtility.Formatter.getFormatter({
                 format: dataPoint.format,
-                value: (this.model.settings.dataLabel.unit == 1 ? this.model.value: this.model.settings.dataLabel.unit),
+                value: (this.model.settings.dataLabel.unit == 0 ? this.model.value: this.model.settings.dataLabel.unit),
                 formatSingleValues: (this.model.settings.dataLabel.unit === 0),
                 allowFormatBeautification: false,
                 precision: this.model.settings.dataLabel.precision,
                 displayUnitSystemType: 3,
                 cultureSelector: this.model.settings.dataLabel.locale
             }); 
-console.log(stateValue);
+
             //States
             let stateIndex = -1;
             if (this.model.settings.states.show) {
