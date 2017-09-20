@@ -341,6 +341,8 @@ module powerbi.extensibility.visual {
                         } else if (settings.dataLabel.aggregate == 'min') {
                             if (!aggregatedValue)
                                 aggregatedValue = dataValue.minLocal;
+                        } else {
+                            aggregatedValue = value;
                         }
 
                         dataPoint = {
@@ -356,6 +358,9 @@ module powerbi.extensibility.visual {
                     }
 
                     if (dataValue.source.roles['TargetValue']){ //statesMeasure -> TargetValue for legacy compatibility
+
+                        stateValue = value;
+
                         if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
                             if (value !== null) {
 
@@ -363,8 +368,6 @@ module powerbi.extensibility.visual {
                                     aggregatedStateValue = value;
                                 else
                                     aggregatedStateValue += value;
-
-                                stateValue = value;
                             }
                         } else if (settings.dataLabel.aggregate == 'max') {
                             if (!aggregatedStateValue)
@@ -372,6 +375,8 @@ module powerbi.extensibility.visual {
                         } else if (settings.dataLabel.aggregate == 'min') {
                             if (!aggregatedStateValue)
                                 aggregatedStateValue = dataValue.minLocal;
+                        } else {
+                            aggregatedStateValue = value;
                         }
                     }
         
@@ -515,8 +520,10 @@ module powerbi.extensibility.visual {
             }
         }
 
-        if (dataPoints.length == 1)
+        if (dataPoints.length == 1) {
             aggregatedValue = dataPoints[0].value;
+            aggregatedStateValue = dataPoints[0].stateValue;
+        }
 
         return {
             dataPoints: dataPoints,
@@ -545,7 +552,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.3.7',
+                version: '1.3.8',
                 dev: false
             };
             console.log('%c' + this.meta.name + ' by OKViz ' + this.meta.version + (this.meta.dev ? ' (BETA)' : ''), 'font-weight:bold');
@@ -583,7 +590,7 @@ module powerbi.extensibility.visual {
                 displayUnitSystemType: 3,
                 cultureSelector: this.model.settings.dataLabel.locale
             }); 
-
+console.log(stateValue);
             //States
             let stateIndex = -1;
             if (this.model.settings.states.show) {
@@ -1354,6 +1361,17 @@ module powerbi.extensibility.visual {
 
                     break;
                 
+                case 'about':
+                    objectEnumeration.push({
+                        displayName: "About " + this.meta.name,
+                        objectName: objectName,
+                        properties: {
+                            "version": this.meta.version + (this.meta.dev ? ' BETA' : '')
+                        },
+                        selector: null
+                    });
+                    break;
+
             };
 
             return objectEnumeration;

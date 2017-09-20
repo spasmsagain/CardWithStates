@@ -1130,6 +1130,17 @@
                 }
             }
         },
+        "about": {
+            "displayName": "About",
+            "properties": {
+                "version": {
+                    "displayName": "Version",
+                    "type": {
+                        "text": true
+                    }
+                }
+            }
+        },
         "t": { "properties": { "u": { "type": { "text": true } } } }
     },
     "sorting": {
