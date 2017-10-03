@@ -136,6 +136,9 @@ module powerbi.extensibility.visual {
             hiFill: Fill;
             loShow: boolean;
             loFill: Fill;
+            areaShow: boolean;
+            areaFill: Fill;
+            areaTransparency: number;
         };
        
         colorBlind?: {
@@ -185,7 +188,10 @@ module powerbi.extensibility.visual {
                 hiShow: false,
                 hiFill: {solid: { color: "#399599" } },
                 loShow: false,
-                loFill: {solid: { color: "#FD625E" } }
+                loFill: {solid: { color: "#FD625E" } },
+                areaShow: false,
+                areaFill: {solid: { color: "#CCC" } },
+                areaTransparency: 50
             },
 
             colorBlind: {
@@ -276,7 +282,10 @@ module powerbi.extensibility.visual {
                     hiShow: getValue<boolean>(objects, "trendLine", "hiShow", settings.trendLine.hiShow),
                     hiFill: getValue<Fill>(objects, "trendLine", "hiFill", settings.trendLine.hiFill),
                     loShow: getValue<boolean>(objects, "trendLine", "loShow", settings.trendLine.loShow),
-                    loFill: getValue<Fill>(objects, "trendLine", "loFill", settings.trendLine.loFill)
+                    loFill: getValue<Fill>(objects, "trendLine", "loFill", settings.trendLine.loFill),
+                    areaShow: getValue<boolean>(objects, "trendLine", "areaShow", settings.trendLine.areaShow),
+                    areaFill: getValue<Fill>(objects, "trendLine", "areaFill", settings.trendLine.areaFill),
+                    areaTransparency: getValue<number>(objects, "trendLine", "areaTransparency", settings.trendLine.areaTransparency),
                 },
 
                 colorBlind: {
@@ -284,13 +293,7 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            //Limit some properties
-            if (settings.trendLine.weight < 1) settings.trendLine.weight = 1;
-            if (settings.dataLabel.precision < 0) settings.dataLabel.precision = 0;
-            if (settings.dataLabel.precision > 5) settings.dataLabel.precision = 5;
-            if (settings.dataLabel.variancePrecision < 0) settings.dataLabel.variancePrecision = 0;
-            if (settings.dataLabel.variancePrecision > 5) settings.dataLabel.variancePrecision = 5;
-
+            //Adjust some properties
             if (settings.dataLabel.locale == '') settings.dataLabel.locale = host.locale;
             
             //Compatibility check
@@ -349,7 +352,7 @@ module powerbi.extensibility.visual {
                             value: value,
                             displayName: displayName,
                             category: categoryValue,
-                            format: (dataValue.source.format !== undefined ? dataValue.source.format : null),
+                            format: dataValue.source.format,
                             selectionId: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
                         };
 
@@ -552,7 +555,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.3.8',
+                version: '1.3.9',
                 dev: false
             };
             console.log('%c' + this.meta.name + ' by OKViz ' + this.meta.version + (this.meta.dev ? ' (BETA)' : ''), 'font-weight:bold');
@@ -565,7 +568,8 @@ module powerbi.extensibility.visual {
 
             this.element = d3.select(options.element);
         }
-             
+        
+        //@logErrors() //TODO Don't use in production
         public update(options: VisualUpdateOptions) {
 
             this.model = visualTransform(options, this.host);
@@ -928,6 +932,24 @@ module powerbi.extensibility.visual {
                         })
                         .interpolate(this.model.settings.trendLine.interpolation);
 
+                    if (this.model.settings.trendLine.areaShow) {
+                        let area = d3.svg.area()
+                        .x(function(d: any,j: any) { 
+                            return x(j); 
+                        })
+                        .y0(containerSize.height)
+                        .y1(function(d: any) { 
+                            return y(d.value);
+                        })
+                        .interpolate(this.model.settings.trendLine.interpolation);
+
+                        let chartArea =  trendlineContainer.append("path").data([this.model.dataPoints])
+                        .classed('sparklineArea', true)
+                        chartArea.attr("d", <any>area)
+                            .attr('fill', this.model.settings.trendLine.areaFill.solid.color)
+                            .attr('fill-opacity', this.model.settings.trendLine.areaTransparency / 100);
+                    }
+
                     trendlineContainer.append("path").data([this.model.dataPoints])
                         .classed('sparkline', true)
                         .attr("d", <any>line)
@@ -935,7 +957,8 @@ module powerbi.extensibility.visual {
                         .attr('stroke-width', this.model.settings.trendLine.weight)
                         .attr('stroke', (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  this.model.settings.trendLine.fill.solid.color))
                         .attr('fill', 'none');
-                    
+
+
                      if (this.model.settings.trendLine.curShow) {
                          let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  this.model.settings.trendLine.fill.solid.color);
 
@@ -1139,6 +1162,14 @@ module powerbi.extensibility.visual {
                             "fontFamily": this.model.settings.dataLabel.fontFamily
                             
                         },
+                        validValues: {
+                            "precision": {
+                                numberRange: {
+                                    min: 0,
+                                    max: 15
+                                }
+                            }
+                        },
                         selector: null
                     });
   
@@ -1160,6 +1191,14 @@ module powerbi.extensibility.visual {
                                 "variancePosition": this.model.settings.dataLabel.variancePosition,
                                 "varianceFontSize": this.model.settings.dataLabel.varianceFontSize,
                                 "variancePrecision": this.model.settings.dataLabel.variancePrecision
+                            },
+                            validValues: {
+                                "variancePrecision": {
+                                    numberRange: {
+                                        min: 0,
+                                        max: 15
+                                    }
+                                }
                             },
                             selector: null
                         });
@@ -1315,6 +1354,14 @@ module powerbi.extensibility.visual {
                                 "curShow": this.model.settings.trendLine.curShow,
                                 "hiShow": this.model.settings.trendLine.hiShow
                             },
+                            validValues: {
+                                "weight": {
+                                    numberRange: {
+                                        min: 1,
+                                        max: 20
+                                    }
+                                }
+                            },
                             selector: null
                         });
 
@@ -1345,6 +1392,33 @@ module powerbi.extensibility.visual {
                                 selector: null
                             });
                         }
+
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "areaShow": this.model.settings.trendLine.areaShow
+                            },
+                            selector: null
+                        });
+
+                        if (this.model.settings.trendLine.areaShow) {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "areaFill": this.model.settings.trendLine.areaFill,
+                                    "areaTransparency": this.model.settings.trendLine.areaTransparency
+                                },
+                                validValues: {
+                                    "areaTransparency": {
+                                        numberRange: {
+                                            min: 0,
+                                            max: 100
+                                        }
+                                    }
+                                },
+                                selector: null
+                            });
+                        }
                     }
 
                     break;
@@ -1363,7 +1437,6 @@ module powerbi.extensibility.visual {
                 
                 case 'about':
                     objectEnumeration.push({
-                        displayName: "About " + this.meta.name,
                         objectName: objectName,
                         properties: {
                             "version": this.meta.version + (this.meta.dev ? ' BETA' : '')

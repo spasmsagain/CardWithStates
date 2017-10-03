@@ -999,7 +999,7 @@
                 "weight": {
                     "displayName": "Weight",
                     "type": {
-                       "numeric": true
+                       "integer": true
                    }
                 },
                 "interpolation": {
@@ -1073,6 +1073,28 @@
                             }
                         }
                     }
+                },
+                "areaShow": {
+                    "displayName": "Show area",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "areaFill": {
+                    "displayName": "Area color",
+                    "type": {
+                         "fill": {
+                           "solid": {
+                               "color": true
+                           }
+                        }
+                    }
+                },
+                "areaTransparency": {
+                   "displayName": "Area transparency",
+                   "type": {
+                       "integer": true
+                   }
                 }
    
             }

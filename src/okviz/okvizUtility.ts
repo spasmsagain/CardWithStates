@@ -1,6 +1,6 @@
 /*
  * OKViz Utilities
- * v1.2.4
+ * v1.2.8
 */
 
 import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
@@ -8,7 +8,7 @@ import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
 module powerbi.extensibility.visual {
     
     export module OKVizUtility {
-
+        
          export class Formatter {
             
             private static _instance:Formatter = new Formatter();
@@ -31,9 +31,6 @@ module powerbi.extensibility.visual {
 
                 let singleton = Formatter._instance;
 
-                //Check if there is a valid format
-                if (!properties.hasOwnProperty('format') || typeof properties.format === "undefined") return false;
-
                 let key = JSON.stringify(properties); //.replace(/\W/g,'_');
                 let pbiFormatter: any;
                 if (key in singleton._cachedFormatters) {
@@ -53,6 +50,17 @@ module powerbi.extensibility.visual {
                     return formatter.format(value);
 
                 return value; 
+            }
+
+            public static countLeadingZeros(value) {
+                if (value < 1 && Math.floor(value) !== value) {
+                    let dec = value % 1;
+                    let str = dec.toString();
+                    for (let i = 2; i < str.length; i ++)
+                        if (str[i] !== '0')
+                            return i;
+                }
+                return 0;
             }
 
             public static getAxisDatesFormatter(dateFrom, dateTo?) {
@@ -341,8 +349,7 @@ module powerbi.extensibility.visual {
             if (value === undefined) {
                 return '(Blank)';
             } else if (Object.prototype.toString.call(value) === '[object Date]') {
-                let dateFormat = d3.time.format('%b %e, %Y'); //%x
-                return dateFormat(value);
+               return value;
             } else if (isValidURL(value)) {
                 return makeURLReadable(value);
             } else {
@@ -431,6 +438,22 @@ module powerbi.extensibility.visual {
                 }
             }, 1);
         }
+    }
 
+    export function logErrors(): MethodDecorator {
+        return <any>(function (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<Function>)
+        : TypedPropertyDescriptor<Function> {
+            
+            return {
+                value: function () {
+                    try {
+                        return <any>descriptor.value.apply(this, arguments);
+                    } catch (e) {
+                        console.error(e);
+                        throw e;
+                    }
+                }
+            }
+        });
     }
 }
