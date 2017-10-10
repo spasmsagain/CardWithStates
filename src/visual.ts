@@ -547,7 +547,7 @@ module powerbi.extensibility.visual {
         private selectionIdBuilder: ISelectionIdBuilder;
         private tooltipServiceWrapper: tooltip.ITooltipServiceWrapper;
         private model: VisualViewModel;
-
+        private licced: boolean;
         private element: d3.Selection<HTMLElement>;
         private window: any;
  
@@ -558,7 +558,6 @@ module powerbi.extensibility.visual {
                 version: '1.3.9',
                 dev: false
             };
-            console.log('%c' + this.meta.name + ' by OKViz ' + this.meta.version + (this.meta.dev ? ' (BETA)' : ''), 'font-weight:bold');
 
             this.host = options.host;
             this.selectionIdBuilder = options.host.createSelectionIdBuilder();
@@ -1107,6 +1106,11 @@ module powerbi.extensibility.visual {
                 'cd11': (this.model.dataPoints.length > 1),
                 'cd15': this.meta.dev
             }); 
+
+            if (!this.licced) {
+                this.licced = true;
+                OKVizUtility.lic_log(this.meta, options);
+            }
                 
             //Color Blind module
             OKVizUtility.applyColorBlindVision(this.model.settings.colorBlind.vision, this.element);

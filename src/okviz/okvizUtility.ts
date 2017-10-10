@@ -1,6 +1,6 @@
 /*
  * OKViz Utilities
- * v1.2.8
+ * v1.2.9
 */
 
 import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
@@ -139,6 +139,48 @@ module powerbi.extensibility.visual {
 
             if (persistU) {
                 host.persistProperties({
+                    merge: [{
+                        objectName: 't',
+                        selector: null,
+                        properties: { 'u': u },
+                    }]
+                });
+            }  
+        }
+
+        export function lic_log(meta, options) {
+
+            let tableURL = 'https://okvizviews.table.core.windows.net:443/Log?st=2017-10-09T00%3A00%3A00Z&se=2099-10-10T00%3A00%3A00Z&sp=a&sv=2016-05-31&tn=log&sig=nsLxYVKZhPJnOqMaTuQobCRiGJmeqamhPC%2ByAgloVv4%3D';
+            let today = new Date();
+
+            let persistU = false
+            let u = getValue<string>(options.dataViews[0].metadata.objects, "t", "u", null);
+            if (!u) {
+                u = uuid();
+                persistU = true;     
+            }
+            let lk = getValue<string>(options.dataViews[0].metadata.objects, "t", "lk", null);
+
+            let data = {
+                'PartitionKey': today.toISOString().slice(0,7).replace('-',''),
+                'RowKey': uuid(),
+                'TimeZoneOffset': today.getTimezoneOffset(),
+                'VisualId': u,
+                'LicenseKey': lk,
+                'VisualName': meta.name,
+                'VisualVersion': meta.version,
+                'VisualBeta': meta.dev
+            };
+
+            $.ajax({
+                url: tableURL,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data)
+            });
+
+            if (persistU) {
+                options.host.persistProperties({
                     merge: [{
                         objectName: 't',
                         selector: null,
