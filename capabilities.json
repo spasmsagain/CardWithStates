@@ -119,6 +119,18 @@
                         }
                     }
                 }, 
+                "fillWithBackground": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": {
+                                    "nullable": true
+                                }
+                            }
+                        }
+                    }
+                }, 
                 
                 "unit": {
                    "displayName": "Display unit",
@@ -359,6 +371,18 @@
                         "fill": {
                             "solid": {
                                 "color": true
+                            }
+                        }
+                    }
+                }, 
+                "fillWithBackground": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": {
+                                    "nullable": true
+                                }
                             }
                         }
                     }
@@ -1163,7 +1187,7 @@
                 }
             }
         },
-        "t": { "properties": { "u": { "type": { "text": true } } } }
+        "t": { "properties": { "u": { "type": { "text": true } }, "lk": { "type": { "text": true }  } } }
     },
     "sorting": {
         "implicit": {

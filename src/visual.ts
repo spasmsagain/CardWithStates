@@ -75,6 +75,7 @@ module powerbi.extensibility.visual {
             aggregate?: string;
             alignment: string;
             fill: Fill;
+            fillWithBackground?: Fill;
             unit?: number;
             precision?: number; 
             locale?: string;
@@ -91,6 +92,7 @@ module powerbi.extensibility.visual {
             type: string;
             text?: string;
             fill: Fill;
+            fillWithBackground?: Fill;
             fontSize: number;
             fontFamily: string;
             wordWrap: boolean;
@@ -217,6 +219,7 @@ module powerbi.extensibility.visual {
                     aggregate: getValue<string>(objects, "dataLabel", "aggregate", settings.dataLabel.aggregate),
                     alignment: getValue<string>(objects, "dataLabel", "alignment", settings.dataLabel.alignment),
                     fill: getValue<Fill>(objects, "dataLabel", "fill", settings.dataLabel.fill),
+                    fillWithBackground: getValue<Fill>(objects, "dataLabel", "fillWithBackground", settings.dataLabel.fillWithBackground),
                     unit: getValue<number>(objects, "dataLabel", "unit", settings.dataLabel.unit),
                     locale: getValue<string>(objects, "dataLabel", "locale", settings.dataLabel.locale),
                     precision: getValue<number>(objects, "dataLabel", "precision", settings.dataLabel.precision),
@@ -233,6 +236,7 @@ module powerbi.extensibility.visual {
                     type: getValue<string>(objects, "categoryLabel", "type", settings.categoryLabel.type),
                     text: getValue<string>(objects, "categoryLabel", "text", settings.categoryLabel.text),
                     fill: getValue<Fill>(objects, "categoryLabel", "fill", settings.categoryLabel.fill),
+                    fillWithBackground: getValue<Fill>(objects, "categoryLabel", "fillWithBackground", settings.categoryLabel.fillWithBackground),
                     fontSize: getValue<number>(objects, "categoryLabel", "fontSize", settings.categoryLabel.fontSize),
                     fontFamily: getValue<string>(objects, "categoryLabel", "fontFamily", settings.categoryLabel.fontFamily),
                     wordWrap: getValue<boolean>(objects, "categoryLabel", "wordWrap", settings.categoryLabel.wordWrap)
@@ -316,6 +320,14 @@ module powerbi.extensibility.visual {
             for (let i = 0; i < categories.length; i++) {
 
                 let categoryValue = OKVizUtility.makeMeasureReadable(categories[i]);
+                if (Object.prototype.toString.call(categoryValue) === '[object Date]') {
+                    let formatter = OKVizUtility.Formatter.getFormatter({
+                        format: category.source.format,
+                        value: categoryValue,
+                        cultureSelector: settings.dataLabel.locale
+                    }); 
+                    categoryValue = formatter.format(categoryValue);
+                }
 
                 let dataPoint: VisualDataPoint;
                 let target, targetDisplayName;
@@ -555,7 +567,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.3.9',
+                version: '1.4.0',
                 dev: false
             };
 
@@ -680,7 +692,8 @@ module powerbi.extensibility.visual {
                 if (this.model.settings.states.behavior == 'forecolor' || this.model.settings.states.behavior == 'label') {    
                     dataLabelColor = dataPoint.states[stateIndex].color;
                 } else if (this.model.settings.states.behavior == 'backcolor') {
-                    dataLabelColor = OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color);
+
+                    dataLabelColor = (this.model.settings.dataLabel.fillWithBackground ?  this.model.settings.dataLabel.fillWithBackground.solid.color :  OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color));
                 }
             }    
 
@@ -725,7 +738,7 @@ module powerbi.extensibility.visual {
                     if (this.model.settings.states.behavior == 'variance' || this.model.settings.states.behavior == 'forecolor') {
                         varianceColor = dataPoint.states[stateIndex].color;
                     } else if (this.model.settings.states.behavior == 'backcolor') {
-                        varianceColor = OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color);
+                        varianceColor = (this.model.settings.dataLabel.fillWithBackground ?  this.model.settings.dataLabel.fillWithBackground.solid.color :  OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color));
                     }
                 }
 
@@ -801,7 +814,7 @@ module powerbi.extensibility.visual {
                     .style({
                         'font-size': categoryLabelFontSize,
                         'font-family': this.model.settings.categoryLabel.fontFamily,
-                        'fill': (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  this.model.settings.categoryLabel.fill.solid.color),
+                        'fill': (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.categoryLabel.fillWithBackground ? this.model.settings.categoryLabel.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.categoryLabel.fill.solid.color),
                         'text-anchor': 'middle'
                     })
                     .text(categoryLabelValue);
@@ -1109,7 +1122,7 @@ module powerbi.extensibility.visual {
 
             if (!this.licced) {
                 this.licced = true;
-                OKVizUtility.lic_log(this.meta, options);
+                OKVizUtility.lic_log(this.meta, options, this.host);
             }
                 
             //Color Blind module
@@ -1146,7 +1159,17 @@ module powerbi.extensibility.visual {
                         });
                     }
 
-                    if (!this.model.settings.states.show) {
+                    if (this.model.settings.states.show) {
+                        if (this.model.settings.states.behavior == 'backcolor') {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fillWithBackground": this.model.settings.dataLabel.fillWithBackground
+                                },
+                                selector: null
+                            });
+                        }
+                    } else {
                         objectEnumeration.push({
                             objectName: objectName,
                             properties: {
@@ -1212,11 +1235,28 @@ module powerbi.extensibility.visual {
 
                 case 'categoryLabel': 
 
+                    if (this.model.settings.states.show && this.model.settings.states.behavior == 'backcolor') {
+                         objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fillWithBackground": this.model.settings.categoryLabel.fillWithBackground
+                            },
+                            selector: null
+                        });
+                    } else {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fill": this.model.settings.categoryLabel.fill
+                            },
+                            selector: null
+                        });
+                    }
+
                     objectEnumeration.push({
                         objectName: objectName,
                         properties: {
                             "show": this.model.settings.categoryLabel.show,
-                            "fill": this.model.settings.categoryLabel.fill,
                             "fontSize": this.model.settings.categoryLabel.fontSize,
                             "fontFamily": this.model.settings.categoryLabel.fontFamily,
                             "wordWrap": this.model.settings.categoryLabel.wordWrap,
