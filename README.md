@@ -4,11 +4,19 @@ Based on the Power BI built-in Card and KPI, the Card with States by OKViz allow
 
 ![alt tag](screenshot.png)
 
-Find out more on http://okviz.com/card-with-states/
+Find out more on https://okviz.com/card-with-states/
+
+## Changelog
+
+A full changelog is available here: [CHANGELOG](/CHANGELOG.md)
 
 
-### Copyrights
+## Submit an issue
 
-Copyright (c) 2016-2017 OKViz - trademark of SQLBI Corp.
+To submit an issue, please visit [CONTRIBUTING](/CONTRIBUTING.md)
+
+## Copyrights
+
+Copyright (c) 2016-2018 OKViz - trademark of SQLBI Corp.
 
 See the [LICENSE](/LICENSE) file for license rights and limitations (MIT).
