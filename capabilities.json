@@ -218,6 +218,10 @@
                                 "value": "\"Courier New\""
                             },
                             {
+                                "displayName": "DIN",
+                                "value": "wf_standard-font,helvetica,arial,sans-serif"
+                            },
+                            {
                                 "displayName": "Georgia",
                                 "value": "Georgia"
                             },
@@ -260,10 +264,6 @@
                             {
                                 "displayName": "Wingdings",
                                 "value": "Wingdings"
-                            },
-                            {
-                                "displayName": "wf_standard-font",
-                                "value": "wf_standard-font,helvetica,arial,sans-serif"
                             }
                         ]
                     }
@@ -349,6 +349,10 @@
                             {
                                 "displayName": "Data point",
                                 "value": "category"
+                            },
+                            {
+                                "displayName": "Goal",
+                                "value": "goal"
                             },
                             {
                                 "displayName": "Custom",
@@ -517,7 +521,7 @@
                     }
                 }, 
 
-                 "behavior": {
+                "behavior": {
                    "displayName": "Affect",
                    "type": {
                        "enumeration": [
@@ -540,7 +544,6 @@
                        ]
                    }
                 },
-
                  "comparison": {
                    "displayName": "Comparison",
                    "type": {
@@ -1059,6 +1062,18 @@
                             }
                         }
                    }
+                },
+                "fillWithBackground": {
+                    "displayName": "Line color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": {
+                                    "nullable": true
+                                }
+                            }
+                        }
+                    }
                 },
                 "curShow": {
                      "displayName": "Current point",

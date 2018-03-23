@@ -5,8 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## v1.4.1 (2018-03-23)
 #### API v1.11.0 - compatible with Power BI March 2018
+### Added
+- Now you can display the current target in the category label
+- Now you can change the trendline color also when states affect the background
 ### Fixed
-- 
+- NaN catching
+- Wrong state application with percentages
 ### Removed
 - Internal telemetry system
 

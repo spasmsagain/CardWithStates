@@ -41,7 +41,6 @@ module powerbi.extensibility.visual {
         value?: number;      
         stateValue?: number; 
         target?: number;
-        arePercentages?: boolean;
         hasStates?: boolean;
         hasTarget?: boolean;
         settings: VisualSettings;
@@ -133,6 +132,7 @@ module powerbi.extensibility.visual {
             weight: number;
             interpolation: string;
             fill: Fill;
+            fillWithBackground?: Fill;
             curShow: boolean;
             hiShow: boolean;
             hiFill: Fill;
@@ -282,6 +282,7 @@ module powerbi.extensibility.visual {
                     weight: getValue<number>(objects, "trendLine", "weight", settings.trendLine.weight),
                     interpolation: getValue<string>(objects, "trendLine", "interpolation", settings.trendLine.interpolation),
                     fill: getValue<Fill>(objects, "trendLine", "fill", settings.trendLine.fill),
+                    fillWithBackground: getValue<Fill>(objects, "trendLine", "fillWithBackground", settings.trendLine.fillWithBackground),
                     curShow: getValue<boolean>(objects, "trendLine", "curShow", settings.trendLine.curShow),
                     hiShow: getValue<boolean>(objects, "trendLine", "hiShow", settings.trendLine.hiShow),
                     hiFill: getValue<Fill>(objects, "trendLine", "hiFill", settings.trendLine.hiFill),
@@ -307,7 +308,6 @@ module powerbi.extensibility.visual {
     
         //Get DataPoints
         let dataPoints: VisualDataPoint[] = [];
-        let arePercentages = false;
         let hasTarget = false;
         let hasStates = false;
         let aggregatedValue, aggregatedStateValue, aggregatedTarget;
@@ -342,6 +342,7 @@ module powerbi.extensibility.visual {
                     let value: any = dataValue.values[i];
 
                     if (dataValue.source.roles['Values']){ //measure -> Values for legacy compatibility
+                        if (isNaN(value)) value = null;
                         
                         if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
                             if (value !== null) {
@@ -368,8 +369,6 @@ module powerbi.extensibility.visual {
                             selectionId: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
                         };
 
-                        if (dataValue.source.format && dataValue.source.format.indexOf('%') > -1)
-                            arePercentages = true;
                     }
 
                     if (dataValue.source.roles['TargetValue']){ //statesMeasure -> TargetValue for legacy compatibility
@@ -520,7 +519,8 @@ module powerbi.extensibility.visual {
                     dataPoint.states = states;
                     dataPoint.stateValue = (stateValue !== null ? stateValue : dataPoint.value);
                     dataPoint.target = target;
-                    dataPoint.targetDisplayName = targetDisplayName;
+                    dataPoint.targetDisplayName = (target == undefined ? '' : targetDisplayName);
+
                     dataPoints.push(dataPoint);
                 }
             }
@@ -545,7 +545,6 @@ module powerbi.extensibility.visual {
             value: aggregatedValue,
             stateValue: aggregatedStateValue,
             target: aggregatedTarget,
-            arePercentages: arePercentages,
             hasTarget: hasTarget,
             hasStates: hasStates,
             settings: settings,
@@ -567,7 +566,7 @@ module powerbi.extensibility.visual {
             this.meta = {
                 name: 'Card with States',
                 version: '1.4.1',
-                dev: true
+                dev: false
             };
 
             this.host = options.host;
@@ -579,7 +578,7 @@ module powerbi.extensibility.visual {
             this.element = d3.select(options.element);
         }
         
-        @logErrors() //TODO Don't use in production
+        //@logErrors() //TODO Don't use in production
         public update(options: VisualUpdateOptions) {
 
             this.model = visualTransform(options, this.host);
@@ -610,7 +609,7 @@ module powerbi.extensibility.visual {
             if (this.model.settings.states.show) {
 
                 let diff = (target ? (stateValue - target) : 0);
-                let variance = (target ? (this.model.arePercentages ? diff : (diff / target)) : 0);
+                let variance = (target ? (diff / target) : 0);
 
                 for (let i = 0; i < dataPoint.states.length; i++){
 
@@ -724,7 +723,7 @@ module powerbi.extensibility.visual {
 
                 let diff = (value - target);
                 let variance = (diff / target);
-                let varianceValue = (variance > 0 ? '+':'') + (this.model.settings.dataLabel.varianceType == 'percentage' ? ((variance * 100).toFixed(this.model.settings.dataLabel.variancePrecision == null ? 2: this.model.settings.dataLabel.variancePrecision)) + '%' : formatter.format(diff));
+                let varianceValue = (target == undefined ? '(Blank)' : (variance > 0 ? '+':'') + (this.model.settings.dataLabel.varianceType == 'percentage' ? ((variance * 100).toFixed(this.model.settings.dataLabel.variancePrecision == null ? 2: this.model.settings.dataLabel.variancePrecision)) + '%' : formatter.format(diff)));
                 let varianceFontSize = PixelConverter.fromPoint(this.model.settings.dataLabel.fontSize / 100 * this.model.settings.dataLabel.varianceFontSize);
                 let varianceWidth = TextUtility.measureTextWidth({
                     text: varianceValue,
@@ -790,10 +789,12 @@ module powerbi.extensibility.visual {
 
                 } else if (this.model.settings.categoryLabel.type == 'category') {
                     rawCategoryLabelValue = dataPoint.category;
+                 } else if (this.model.settings.categoryLabel.type == 'goal') {
+                    rawCategoryLabelValue = 'Goal: ' + formatter.format(dataPoint.target);
                 } else if (this.model.settings.categoryLabel.type == 'custom') {
                     rawCategoryLabelValue = this.model.settings.categoryLabel.text;
                 } else {
-                    if (this.model.settings.dataLabel.variance && this.model.hasTarget)
+                    if (this.model.settings.dataLabel.variance && this.model.hasTarget && dataPoint.targetDisplayName != '')
                         rawCategoryLabelValue += ' (vs. ' +  dataPoint.targetDisplayName + ')';
                 }
 
@@ -966,12 +967,12 @@ module powerbi.extensibility.visual {
                         .attr("d", <any>line)
                         .attr('stroke-linecap', 'round')
                         .attr('stroke-width', this.model.settings.trendLine.weight)
-                        .attr('stroke', (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  this.model.settings.trendLine.fill.solid.color))
+                        .attr('stroke', (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color))
                         .attr('fill', 'none');
 
 
                      if (this.model.settings.trendLine.curShow) {
-                         let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  this.model.settings.trendLine.fill.solid.color);
+                         let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color);
 
                         trendlineContainer.append('circle')
                             .classed('point fixed', true)
@@ -1044,7 +1045,7 @@ module powerbi.extensibility.visual {
                                 circle = trendlineContainer.append('circle').classed('point', true);
                             
                             let val = self.model.dataPoints[foundIndex].value;
-                            let color = (stateIndex > -1 && self.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  self.model.settings.trendLine.fill.solid.color);
+                            let color = (stateIndex > -1 && self.model.settings.states.behavior == 'backcolor' ? (self.model.settings.trendLine.fillWithBackground ? self.model.settings.trendLine.fillWithBackground.solid.color :OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  self.model.settings.trendLine.fill.solid.color);
                             if (self.model.settings.trendLine.hiShow && topValue.value == val) {
                                 color = self.model.settings.trendLine.hiFill.solid.color;
 
@@ -1105,7 +1106,7 @@ module powerbi.extensibility.visual {
                 if (this.model.settings.dataLabel.alignment == 'middle') {
                     svgContainer.attr('transform', 'translate(0, ' + (((containerSize.height -padding.bottom  - incrementalPos.y) / 2)-margin.top) + ')');
 
-                }
+                } 
 
             }
 
@@ -1268,13 +1269,12 @@ module powerbi.extensibility.visual {
                         properties: {
                             "show": this.model.settings.states.show,
                             "behavior": this.model.settings.states.behavior,
-                            "showMessages": this.model.settings.states.showMessages
-                            
+                            "showMessages": this.model.settings.states.showMessages     
                         },
                         selector: null
                     });
 
-                     if (this.model.settings.states.showMessages) {
+                    if (this.model.settings.states.showMessages) {
                          objectEnumeration.push({
                             objectName: objectName,
                             properties: {
@@ -1371,6 +1371,25 @@ module powerbi.extensibility.visual {
                 case 'trendLine':  
 
                     if (this.model.dataPoints.length > 1) {
+
+                        if (this.model.settings.states.show && this.model.settings.states.behavior == 'backcolor') {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fillWithBackground": this.model.settings.trendLine.fillWithBackground
+                                },
+                                selector: null
+                            });
+                        } else {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fill": this.model.settings.trendLine.fill
+                                },
+                                selector: null
+                            });
+                        }
+
                         objectEnumeration.push({
                             objectName: objectName,
                             properties: {
@@ -1378,7 +1397,6 @@ module powerbi.extensibility.visual {
                                 "end": this.model.settings.trendLine.end,
                                 "interpolation": this.model.settings.trendLine.interpolation,
                                 "weight": this.model.settings.trendLine.weight,
-                                "fill": this.model.settings.trendLine.fill,
                                 "curShow": this.model.settings.trendLine.curShow,
                                 "hiShow": this.model.settings.trendLine.hiShow
                             },
