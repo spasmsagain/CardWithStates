@@ -559,7 +559,6 @@ module powerbi.extensibility.visual {
         private selectionIdBuilder: ISelectionIdBuilder;
         private tooltipServiceWrapper: tooltip.ITooltipServiceWrapper;
         private model: VisualViewModel;
-        private licced: boolean;
         private element: d3.Selection<HTMLElement>;
         private window: any;
  
@@ -567,8 +566,8 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.4.0',
-                dev: false
+                version: '1.4.1',
+                dev: true
             };
 
             this.host = options.host;
@@ -580,7 +579,7 @@ module powerbi.extensibility.visual {
             this.element = d3.select(options.element);
         }
         
-        //@logErrors() //TODO Don't use in production
+        @logErrors() //TODO Don't use in production
         public update(options: VisualUpdateOptions) {
 
             this.model = visualTransform(options, this.host);
@@ -1109,22 +1108,7 @@ module powerbi.extensibility.visual {
                 }
 
             }
-            
-            OKVizUtility.t([this.meta.name, this.meta.version], this.element, options, this.host, {
-                'cd1': this.model.settings.colorBlind.vision, 
-                'cd2': (this.model.settings.states.show ?  this.model.dataPoints[0].states.length : 0),
-                'cd3': this.model.settings.states.comparison, 
-                'cd5': this.model.hasStates, 
-                'cd10': this.model.settings.dataLabel.variance, 
-                'cd11': (this.model.dataPoints.length > 1),
-                'cd15': this.meta.dev
-            }); 
 
-            if (!this.licced) {
-                this.licced = true;
-                OKVizUtility.lic_log(this.meta, options, this.host);
-            }
-                
             //Color Blind module
             OKVizUtility.applyColorBlindVision(this.model.settings.colorBlind.vision, this.element);
         }    
