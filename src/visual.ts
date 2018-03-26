@@ -133,6 +133,7 @@ module powerbi.extensibility.visual {
             interpolation: string;
             fill: Fill;
             fillWithBackground?: Fill;
+            showAllPoints: boolean;
             curShow: boolean;
             hiShow: boolean;
             hiFill: Fill;
@@ -187,6 +188,7 @@ module powerbi.extensibility.visual {
                 interpolation: "monotone",
                 fill: {solid: { color: "#333" } },
                 curShow: true,
+                showAllPoints: false,
                 hiShow: false,
                 hiFill: {solid: { color: "#399599" } },
                 loShow: false,
@@ -284,6 +286,7 @@ module powerbi.extensibility.visual {
                     fill: getValue<Fill>(objects, "trendLine", "fill", settings.trendLine.fill),
                     fillWithBackground: getValue<Fill>(objects, "trendLine", "fillWithBackground", settings.trendLine.fillWithBackground),
                     curShow: getValue<boolean>(objects, "trendLine", "curShow", settings.trendLine.curShow),
+                    showAllPoints: getValue<boolean>(objects, "trendLine", "showAllPoints", settings.trendLine.showAllPoints),
                     hiShow: getValue<boolean>(objects, "trendLine", "hiShow", settings.trendLine.hiShow),
                     hiFill: getValue<Fill>(objects, "trendLine", "hiFill", settings.trendLine.hiFill),
                     loShow: getValue<boolean>(objects, "trendLine", "loShow", settings.trendLine.loShow),
@@ -892,7 +895,7 @@ module powerbi.extensibility.visual {
             }
 
             //Trend line
-             let self = this;
+            let self = this;
             if (this.model.dataPoints.length > 1) {
 
                 //We use this method and not d3.extent because we need to know hi/low index points
@@ -981,123 +984,176 @@ module powerbi.extensibility.visual {
                             .attr('r', ray)
                             .attr('fill', color);
                             
-                        }
-
-                    if (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor') {
-                        //Do nothing
-                        //Coding Horror? :)
-
-                    } else {
-                        if (this.model.settings.trendLine.hiShow) {
-                            let color = this.model.settings.trendLine.hiFill.solid.color;
-
-                            for (let xx = 0; xx < topValue.indexes.length; xx++) {
-                                trendlineContainer.append('circle')
-                                    .classed('point fixed', true)
-                                    .attr('cx', x(topValue.indexes[xx]))
-                                    .attr('cy', y(topValue.value))
-                                    .attr('r', ray)
-                                    .attr('fill', color);  
-                            }
-                        }
-
-
-                        if (this.model.settings.trendLine.loShow) {
-                            let color = this.model.settings.trendLine.loFill.solid.color;
-                            for (let xx = 0; xx < bottomValue.indexes.length; xx++) {
-                                trendlineContainer.append('circle')
-                                    .classed('point fixed', true)
-                                    .attr('cx', x(bottomValue.indexes[xx]))
-                                    .attr('cy', y(bottomValue.value))
-                                    .attr('r', ray)
-                                    .attr('fill', color);  
-                            }
-                        }
                     }
 
-                    //Tooltips
                     let self = this;
-                    let hidePointTimeout;
-                    trendlineContainer.on('mousemove', function(){
+                    if (this.model.settings.trendLine.showAllPoints) {
+         
+                        for (let ii = 0; ii < this.model.dataPoints.length; ii++) {
+                            let val = this.model.dataPoints[ii].value;
+                            if (val == undefined || val == null) continue;
 
-                        clearTimeout(hidePointTimeout);
+                            let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color);
+                            if (this.model.settings.trendLine.hiShow && topValue.value == val) {
+                                color = this.model.settings.trendLine.hiFill.solid.color;
 
-                        let coord = [0, 0];
-                        coord = d3.mouse(this);
-
-                        let foundIndex = -1;
-                        for (let ii = 0; ii < self.model.dataPoints.length; ii++) {
-                            if (coord[0] == x(ii)) {
-                                foundIndex = ii;
-                                break;
-                            } else if (coord[0] < x(ii) - ((x(ii) - x(ii-1))/2)) {
-                                foundIndex = ii;
-                            } else {
-                                break;
+                            } else if (this.model.settings.trendLine.loShow && bottomValue.value == val) {
+                                color = this.model.settings.trendLine.loFill.solid.color;
                             }
-                        }
 
-                        let circle = trendlineContainer.select('.point:not(.fixed):not(.keep)');
-                        if (foundIndex == -1) {
-                            circle.remove();
-                        } else {
-                            if (circle.empty())
-                                circle = trendlineContainer.append('circle').classed('point', true);
+                            var circle = trendlineContainer.append('circle')
+                                .classed('point', true);
                             
-                            let val = self.model.dataPoints[foundIndex].value;
-                            let color = (stateIndex > -1 && self.model.settings.states.behavior == 'backcolor' ? (self.model.settings.trendLine.fillWithBackground ? self.model.settings.trendLine.fillWithBackground.solid.color :OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  self.model.settings.trendLine.fill.solid.color);
-                            if (self.model.settings.trendLine.hiShow && topValue.value == val) {
-                                color = self.model.settings.trendLine.hiFill.solid.color;
-
-                            } else if  (self.model.settings.trendLine.loShow && bottomValue.value == val) {
-                                color = self.model.settings.trendLine.loFill.solid.color;
-                            }
-
                             circle
-                                .attr('cx', x(foundIndex))
-                                .attr('cy', y(val))
-                                .attr('r', ray)
-                                .attr('fill', color)  
-                                .on('click', function(d) {
-                                    selectionManager.select(self.model.dataPoints[foundIndex].selectionId).then((ids: ISelectionId[]) => {
-                                        
-                                        let selection = (ids.length > 0);
-                                        d3.selectAll('.point.fixed').attr({ 'fill-opacity': (selection ? 0.3 : 1) });
-                                        d3.selectAll('.sparkline').attr({ 'stroke-opacity': (selection ? 0.3 : 1) });
-                                        d3.selectAll('.point.keep').classed('keep', false);
-
-                                        if (selection) 
-                                            d3.select(this).classed('keep', true).attr({ 'fill-opacity': 1 });
-
-                                        d3.selectAll('.point:not(.fixed):not(.keep)').remove();
-                                    });
-
-                                    (<Event>d3.event).stopPropagation();
-                                });
-            
-                                  
-                            self.tooltipServiceWrapper.addTooltip(circle, 
-                                function(eventArgs: TooltipEventArgs<TooltipEnabledDataPoint>){
-                                    return [<VisualTooltipDataItem>{
-                                        header: self.model.dataPoints[foundIndex].category,
+                                .data([[<VisualTooltipDataItem>{
+                                        header: self.model.dataPoints[ii].category,
                                         displayName: dataPoint.displayName,
                                         value: formatter.format(val),
                                         color: (color.substr(1, 3) == '333' ? '#000' : color),
                                         markerShape: 'circle'
-                                    }]; 
-                                }, null, true
-                            );
+                                    }]])
+                                .attr('cx', x(ii))
+                                .attr('cy', y(val))
+                                .attr('r', ray)
+                                .attr('fill', color)
+                                .on('click', function(d) {
+                                    self.selectionManager.select(self.model.dataPoints[ii].selectionId).then((ids: ISelectionId[]) => {
+
+                                        let selection = (ids.length > 0);
+                                        d3.selectAll('.point').attr({ 'fill-opacity': (selection ? 0.3 : 1)});
+                                        d3.selectAll('.sparkline').attr({ 'stroke-opacity': (selection ? 0.3 : 1) });
+                                        if (selection)
+                                            d3.select(this).attr({ 'fill-opacity': 1 });
+                                    });
+
+                                    (<Event>d3.event).stopPropagation();
+                                });
                         }
- 
-                    });
-                    trendlineContainer.on('mouseenter', function(){ 
-                        clearTimeout(hidePointTimeout);
-                    });
-                    trendlineContainer.on('mouseleave', function(){ 
-                        hidePointTimeout = setTimeout(function(){
-                            svgContainer.selectAll('.point:not(.fixed):not(.keep)').remove();
-                        }, 500);
-                    });
+       
+                        this.tooltipServiceWrapper.addTooltip(trendlineContainer.selectAll('.point'), 
+                            function(tooltipEvent: TooltipEventArgs<number>){
+                                if (tooltipEvent)
+                                    return <any>tooltipEvent.data; 
+                                return null;
+                            }, 
+                            (tooltipEvent: TooltipEventArgs<number>) => null
+                        );
+                        
+                    } else {
+
+                        if (stateIndex == -1 || this.model.settings.states.behavior != 'backcolor') {
+
+                            if (this.model.settings.trendLine.hiShow) {
+                                let color = this.model.settings.trendLine.hiFill.solid.color;
+
+                                for (let xx = 0; xx < topValue.indexes.length; xx++) {
+                                    trendlineContainer.append('circle')
+                                        .classed('point fixed', true)
+                                        .attr('cx', x(topValue.indexes[xx]))
+                                        .attr('cy', y(topValue.value))
+                                        .attr('r', ray)
+                                        .attr('fill', color);  
+                                }
+                            }
+
+
+                            if (this.model.settings.trendLine.loShow) {
+                                let color = this.model.settings.trendLine.loFill.solid.color;
+                                for (let xx = 0; xx < bottomValue.indexes.length; xx++) {
+                                    trendlineContainer.append('circle')
+                                        .classed('point fixed', true)
+                                        .attr('cx', x(bottomValue.indexes[xx]))
+                                        .attr('cy', y(bottomValue.value))
+                                        .attr('r', ray)
+                                        .attr('fill', color);  
+                                }
+                            }
+                        }
+
+                        //Tooltips
+                        
+                        let hidePointTimeout;
+                        trendlineContainer.on('mousemove', function(){
+
+                            clearTimeout(hidePointTimeout);
+
+                            let coord = [0, 0];
+                            coord = d3.mouse(this);
+
+                            let foundIndex = -1;
+                            for (let ii = 0; ii < self.model.dataPoints.length; ii++) {
+                                if (coord[0] == x(ii)) {
+                                    foundIndex = ii;
+                                    break;
+                                } else if (coord[0] < x(ii) - ((x(ii) - x(ii-1))/2)) {
+                                    foundIndex = ii;
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            let circle = trendlineContainer.select('.point:not(.fixed):not(.keep)');
+                            if (foundIndex == -1) {
+                                circle.remove();
+                            } else {
+                                if (circle.empty())
+                                    circle = trendlineContainer.append('circle').classed('point', true);
+                                
+                                let val = self.model.dataPoints[foundIndex].value;
+                                let color = (stateIndex > -1 && self.model.settings.states.behavior == 'backcolor' ? (self.model.settings.trendLine.fillWithBackground ? self.model.settings.trendLine.fillWithBackground.solid.color :OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  self.model.settings.trendLine.fill.solid.color);
+                                if (self.model.settings.trendLine.hiShow && topValue.value == val) {
+                                    color = self.model.settings.trendLine.hiFill.solid.color;
+
+                                } else if  (self.model.settings.trendLine.loShow && bottomValue.value == val) {
+                                    color = self.model.settings.trendLine.loFill.solid.color;
+                                }
+
+                                circle
+                                    .attr('cx', x(foundIndex))
+                                    .attr('cy', y(val))
+                                    .attr('r', ray)
+                                    .attr('fill', color)  
+                                    .on('click', function(d) {
+                                        selectionManager.select(self.model.dataPoints[foundIndex].selectionId).then((ids: ISelectionId[]) => {
+                                            
+                                            let selection = (ids.length > 0);
+                                            d3.selectAll('.point.fixed').attr({ 'fill-opacity': (selection ? 0.3 : 1) });
+                                            d3.selectAll('.sparkline').attr({ 'stroke-opacity': (selection ? 0.3 : 1) });
+                                            d3.selectAll('.point.keep').classed('keep', false);
+
+                                            if (selection) 
+                                                d3.select(this).classed('keep', true).attr({ 'fill-opacity': 1 });
+
+                                            d3.selectAll('.point:not(.fixed):not(.keep)').remove();
+                                        });
+
+                                        (<Event>d3.event).stopPropagation();
+                                    });
+                
+                                    
+                                self.tooltipServiceWrapper.addTooltip(circle, 
+                                    function(eventArgs: TooltipEventArgs<TooltipEnabledDataPoint>){
+                                        return [<VisualTooltipDataItem>{
+                                            header: self.model.dataPoints[foundIndex].category,
+                                            displayName: dataPoint.displayName,
+                                            value: (val == undefined ? '(Blank)' : formatter.format(val)),
+                                            color: (color.substr(1, 3) == '333' ? '#000' : color),
+                                            markerShape: 'circle'
+                                        }]; 
+                                    }, null, true
+                                );
+                            }
+    
+                        });
+                        trendlineContainer.on('mouseenter', function(){ 
+                            clearTimeout(hidePointTimeout);
+                        });
+                        trendlineContainer.on('mouseleave', function(){ 
+                            hidePointTimeout = setTimeout(function(){
+                                svgContainer.selectAll('.point:not(.fixed):not(.keep)').remove();
+                            }, 500);
+                        });
+                    }
                 }
 
 
@@ -1397,6 +1453,7 @@ module powerbi.extensibility.visual {
                                 "end": this.model.settings.trendLine.end,
                                 "interpolation": this.model.settings.trendLine.interpolation,
                                 "weight": this.model.settings.trendLine.weight,
+                                "showAllPoints": this.model.settings.trendLine.showAllPoints,
                                 "curShow": this.model.settings.trendLine.curShow,
                                 "hiShow": this.model.settings.trendLine.hiShow
                             },

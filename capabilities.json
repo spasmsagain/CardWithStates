@@ -1081,6 +1081,12 @@
                          "bool": true
                      }
                  },
+                 "showAllPoints": {
+                     "displayName": "Show all points",
+                     "type": {
+                         "bool": true
+                     }
+                 },
                 "hiShow": {
                     "displayName": "Highest point",
                     "type": {
