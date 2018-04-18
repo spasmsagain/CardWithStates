@@ -56,6 +56,7 @@ module powerbi.extensibility.visual {
         targetDisplayName?: string;
         format?: string;
         selectionId: any;
+        selected: boolean;
     }
 
     interface VisualState {
@@ -345,7 +346,6 @@ module powerbi.extensibility.visual {
                     let value: any = dataValue.values[i];
 
                     if (dataValue.source.roles['Values']){ //measure -> Values for legacy compatibility
-                        if (isNaN(value)) value = null;
                         
                         if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
                             if (value !== null) {
@@ -369,6 +369,7 @@ module powerbi.extensibility.visual {
                             displayName: displayName,
                             category: categoryValue,
                             format: dataValue.source.format,
+                            selected: false,
                             selectionId: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
                         };
 
@@ -379,7 +380,7 @@ module powerbi.extensibility.visual {
                         stateValue = value;
 
                         if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
-                            if (value !== null) {
+                            if (value !== null && !isNaN(value)) {
 
                                 if (!aggregatedStateValue)
                                     aggregatedStateValue = value;
@@ -533,7 +534,8 @@ module powerbi.extensibility.visual {
         if (dataPoints.length > 1) {
             if (settings.dataLabel.aggregate == 'avg') {
                 aggregatedValue = aggregatedValue / dataPoints.length;
-                aggregatedStateValue = aggregatedStateValue / dataPoints.length;
+                if (aggregatedStateValue != null)
+                    aggregatedStateValue = aggregatedStateValue / dataPoints.length;
                 aggregatedTarget = aggregatedTarget / dataPoints.length;
             }
         }
@@ -568,7 +570,7 @@ module powerbi.extensibility.visual {
       
             this.meta = {
                 name: 'Card with States',
-                version: '1.4.1',
+                version: '1.4.2',
                 dev: false
             };
 
@@ -1165,6 +1167,18 @@ module powerbi.extensibility.visual {
                 } 
 
             }
+
+            //Bookmarks 
+            /*this.selectionManager.registerOnSelectCallback(
+                (ids: ISelectionId[]) => {
+                    self.model.dataPoints.forEach(dataPoint => {
+                
+                        if ((<any>ids).equals(dataPoint.selectionId)) {
+                            dataPoint.selected = true;
+                        }
+                    });
+                });
+            */
 
             //Color Blind module
             OKVizUtility.applyColorBlindVision(this.model.settings.colorBlind.vision, this.element);

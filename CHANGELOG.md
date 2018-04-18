@@ -1,7 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v1.4.2 (2018-04-18)
+### Fixed
+- (Blank) for text values
+- State for Average data label
 
 ## v1.4.1 (2018-03-26)
 #### API v1.11.0 - compatible with Power BI March 2018
