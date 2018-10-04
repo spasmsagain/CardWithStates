@@ -1,0 +1,1612 @@
+/*
+ *  Card with States by OKViz
+ *
+ *  Copyright (c) SQLBI. OKViz is a trademark of SQLBI Corp.
+ *  All rights reserved.
+ *  MIT License
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software and associated documentation files (the ""Software""), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
+ *  furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included in
+ *  all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ *  THE SOFTWARE.
+ */
+
+import tooltip = powerbi.extensibility.utils.tooltip;
+import TooltipEnabledDataPoint = powerbi.extensibility.utils.tooltip.TooltipEnabledDataPoint;
+import TooltipEventArgs = powerbi.extensibility.utils.tooltip.TooltipEventArgs;
+
+module powerbi.extensibility.visual {
+    
+    interface VisualMeta {
+        name: string;
+        version: string;
+        dev: boolean;
+    }
+
+    interface VisualViewModel {
+        dataPoints: VisualDataPoint[];
+        value?: number;      
+        stateValue?: number; 
+        target?: number;
+        hasStates?: boolean;
+        hasTarget?: boolean;
+        settings: VisualSettings;
+    }
+
+    interface VisualDataPoint {
+        category?: any;
+        states?: VisualState[]; 
+        displayName: string;
+        value: number; 
+        stateValue?: number;
+        target?: number;
+        targetDisplayName?: string;
+        format?: string;
+        selectionId: any;
+        selected: boolean;
+    }
+
+    interface VisualState {
+        value: number;
+        color?: string;
+        text?: string;
+        icon?: string;
+        displayName?: string;
+        isTarget: boolean;
+        sourcePosition: number;
+        selectionId: any;
+    }
+
+    interface VisualSettings {
+        dataLabel: {
+            aggregate?: string;
+            alignment: string;
+            fill: Fill;
+            fillWithBackground?: Fill;
+            unit?: number;
+            precision?: number; 
+            locale?: string;
+            fontFamily: string;
+            fontSize: number;
+            variance: boolean;
+            varianceType: string;
+            variancePosition: string;
+            variancePrecision?: number;
+            varianceFontSize: number;
+        };
+        colorCode: {
+            direction: string;
+            goodFill : Fill;
+            badFill : Fill;
+        };
+        categoryLabel: {
+            show: boolean;
+            type: string;
+            text?: string;
+            fill: Fill;
+            fillWithBackground?: Fill;
+            fontSize: number;
+            fontFamily: string;
+            wordWrap: boolean;
+        };
+        states: {
+            show: boolean;
+            behavior: string;
+            showMessages: boolean;
+            calculate: string;
+            comparison: string;
+            baseFill: Fill;
+            fontSize: number;
+            fontFamily: string;
+            manualState1?: number;
+            manualState1Fill?: Fill;
+            manualState1Text?: string;
+            manualState1Icon?: string;
+            manualState2?: number;
+            manualState2Fill?: Fill;
+            manualState2Text?: string;
+            manualState2Icon?: string;
+            manualState3?: number;
+            manualState3Fill?: Fill;
+            manualState3Text?: string;
+            manualState3Icon?: string;
+            manualState4?: number;
+            manualState4Fill?: Fill;
+            manualState4Text?: string;
+            manualState4Icon?: string;
+            manualState5?: number;
+            manualState5Fill?: Fill;
+            manualState5Text?: string;
+            manualState5Icon?: string;
+        };
+        trendLine: {
+            start?: number;
+            end?: number;
+            weight: number;
+            interpolation: string;
+            fill: Fill;
+            fillWithBackground?: Fill;
+            showAllPoints: boolean;
+            curShow: boolean;
+            hiShow: boolean;
+            hiFill: Fill;
+            loShow: boolean;
+            loFill: Fill;
+            areaShow: boolean;
+            areaFill: Fill;
+            areaTransparency: number;
+        };
+       
+        colorBlind?: {
+            vision?: string;
+        }
+    }
+
+    function defaultSettings(): VisualSettings {
+
+        return {
+            dataLabel: {
+                aggregate: 'last',
+                alignment: 'middle',
+                fill: {solid: { color: '#333' } },
+                unit: 0,
+                locale: '',
+                fontSize: 30,
+                fontFamily:  'wf_standard-font,helvetica,arial,sans-serif',
+                variance: false,
+                varianceType: 'percentage',
+                variancePosition: 'right',
+                varianceFontSize: 80
+            },
+            categoryLabel: {
+                show: true,
+                type: 'measure',
+                fill: { solid: { color: '#a6a6a6' } },
+                fontSize: 12,
+                fontFamily: '"Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif',
+                wordWrap: false
+            },
+            colorCode : {
+                direction : 'highisgood',
+                goodFill : { solid: { color: '#00EE00' } },
+                badFill : { solid: { color: '#EE0000' } }
+            },
+            states: {
+                show: true,
+                behavior: 'label',
+                comparison: '>',
+                calculate: 'absolute',
+                baseFill: { solid: { color: '#333' } },
+                showMessages: false,
+                fontSize: 10,
+                fontFamily: '"Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif'
+            },
+            trendLine: {
+                weight: 2,
+                interpolation: "monotone",
+                fill: {solid: { color: "#333" } },
+                curShow: true,
+                showAllPoints: false,
+                hiShow: false,
+                hiFill: {solid: { color: "#399599" } },
+                loShow: false,
+                loFill: {solid: { color: "#FD625E" } },
+                areaShow: false,
+                areaFill: {solid: { color: "#CCC" } },
+                areaTransparency: 50
+            },
+
+            colorBlind: {
+                vision: "Normal"
+            }
+        };
+    }
+
+    function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
+
+        //Get DataViews
+        let dataViews = options.dataViews;
+        let hasDataViews = (dataViews && dataViews[0]);
+        let hasCategoricalData = (hasDataViews && dataViews[0].categorical && dataViews[0].categorical.values);
+        let hasSettings = (hasDataViews && dataViews[0].metadata && dataViews[0].metadata.objects);
+
+        //Get Settings
+        let settings: VisualSettings = defaultSettings();
+        if (hasSettings) {
+            let objects = dataViews[0].metadata.objects;
+            settings = {
+                dataLabel: {
+                    aggregate: getValue<string>(objects, "dataLabel", "aggregate", settings.dataLabel.aggregate),
+                    alignment: getValue<string>(objects, "dataLabel", "alignment", settings.dataLabel.alignment),
+                    fill: getValue<Fill>(objects, "dataLabel", "fill", settings.dataLabel.fill),
+                    fillWithBackground: getValue<Fill>(objects, "dataLabel", "fillWithBackground", settings.dataLabel.fillWithBackground),
+                    unit: getValue<number>(objects, "dataLabel", "unit", settings.dataLabel.unit),
+                    locale: getValue<string>(objects, "dataLabel", "locale", settings.dataLabel.locale),
+                    precision: getValue<number>(objects, "dataLabel", "precision", settings.dataLabel.precision),
+                    fontFamily: getValue<string>(objects, "dataLabel", "fontFamily", settings.dataLabel.fontFamily),
+                    fontSize: getValue<number>(objects, "dataLabel", "fontSize", settings.dataLabel.fontSize),
+                    variance: getValue<boolean>(objects, "dataLabel", "variance", settings.dataLabel.variance),
+                    varianceType: getValue<string>(objects, "dataLabel", "varianceType", settings.dataLabel.varianceType),
+                    variancePrecision: getValue<number>(objects, "dataLabel", "variancePrecision", settings.dataLabel.variancePrecision),
+                    varianceFontSize: getValue<number>(objects, "dataLabel", "varianceFontSize", settings.dataLabel.varianceFontSize),
+                    variancePosition: getValue<string>(objects, "dataLabel", "variancePosition", settings.dataLabel.variancePosition),
+                },
+                colorCode: {
+                    direction : getValue<string>(objects, "colorCode", "direction", settings.colorCode.direction),
+                    goodFill: getValue<Fill>(objects, "colorCode", "goodFill", settings.colorCode.goodFill),
+                    badFill : getValue<Fill>(objects, "colorCode", "badFill", settings.colorCode.badFill)
+                },
+                categoryLabel: {
+                    show: getValue<boolean>(objects, "categoryLabel", "show", settings.categoryLabel.show),
+                    type: getValue<string>(objects, "categoryLabel", "type", settings.categoryLabel.type),
+                    text: getValue<string>(objects, "categoryLabel", "text", settings.categoryLabel.text),
+                    fill: getValue<Fill>(objects, "categoryLabel", "fill", settings.categoryLabel.fill),
+                    fillWithBackground: getValue<Fill>(objects, "categoryLabel", "fillWithBackground", settings.categoryLabel.fillWithBackground),
+                    fontSize: getValue<number>(objects, "categoryLabel", "fontSize", settings.categoryLabel.fontSize),
+                    fontFamily: getValue<string>(objects, "categoryLabel", "fontFamily", settings.categoryLabel.fontFamily),
+                    wordWrap: getValue<boolean>(objects, "categoryLabel", "wordWrap", settings.categoryLabel.wordWrap)
+                },
+                states: {
+                    show: getValue<boolean>(objects, "states", "show", settings.states.show),
+                    showMessages: getValue<boolean>(objects, "states", "showMessages", settings.states.showMessages),
+                    calculate: getValue<string>(objects, "states", "calculate", settings.states.calculate),
+                    comparison: getValue<string>(objects, "states", "comparison", settings.states.comparison),
+                    behavior: getValue<string>(objects, "states", "behavior", settings.states.behavior),
+                    fontSize: getValue<number>(objects, "states", "fontSize", settings.states.fontSize),
+                    fontFamily: getValue<string>(objects, "states", "fontFamily", settings.states.fontFamily),
+                    baseFill: getValue<Fill>(objects, "states", "baseFill", settings.states.baseFill),
+
+                    manualState1: getValue<number>(objects, "states", "manualState1", settings.states.manualState1),
+                    manualState1Fill: getValue<Fill>(objects, "states", "manualState1Fill", settings.states.manualState1Fill),
+                    manualState1Text: getValue<string>(objects, "states", "manualState1Text", settings.states.manualState1Text),
+                    manualState1Icon: getValue<string>(objects, "states", "manualState1Icon", settings.states.manualState1Icon),
+
+                    manualState2: getValue<number>(objects, "states", "manualState2", settings.states.manualState2),
+                    manualState2Fill: getValue<Fill>(objects, "states", "manualState2Fill", settings.states.manualState2Fill),
+                    manualState2Text: getValue<string>(objects, "states", "manualState2Text", settings.states.manualState2Text),
+                    manualState2Icon: getValue<string>(objects, "states", "manualState2Icon", settings.states.manualState2Icon),
+
+                    manualState3: getValue<number>(objects, "states", "manualState3", settings.states.manualState3),
+                    manualState3Fill: getValue<Fill>(objects, "states", "manualState3Fill", settings.states.manualState3Fill),
+                    manualState3Text: getValue<string>(objects, "states", "manualState3Text", settings.states.manualState3Text),
+                    manualState3Icon: getValue<string>(objects, "states", "manualState3Icon", settings.states.manualState3Icon),
+
+                    manualState4: getValue<number>(objects, "states", "manualState4", settings.states.manualState4),
+                    manualState4Fill: getValue<Fill>(objects, "states", "manualState4Fill", settings.states.manualState4Fill),
+                    manualState4Text: getValue<string>(objects, "states", "manualState4Text", settings.states.manualState4Text),
+                    manualState4Icon: getValue<string>(objects, "states", "manualState4Icon", settings.states.manualState4Icon),
+
+                    manualState5: getValue<number>(objects, "states", "manualState5", settings.states.manualState5),
+                    manualState5Fill: getValue<Fill>(objects, "states", "manualState5Fill", settings.states.manualState5Fill),
+                    manualState5Text: getValue<string>(objects, "states", "manualState5Text", settings.states.manualState5Text),
+                    manualState5Icon: getValue<string>(objects, "states", "manualState5Icon", settings.states.manualState5Icon)
+                },
+                trendLine: {
+                    start: getValue<number>(objects, "trendLine", "start", settings.trendLine.start),
+                    end: getValue<number>(objects, "trendLine", "end", settings.trendLine.end),
+                    weight: getValue<number>(objects, "trendLine", "weight", settings.trendLine.weight),
+                    interpolation: getValue<string>(objects, "trendLine", "interpolation", settings.trendLine.interpolation),
+                    fill: getValue<Fill>(objects, "trendLine", "fill", settings.trendLine.fill),
+                    fillWithBackground: getValue<Fill>(objects, "trendLine", "fillWithBackground", settings.trendLine.fillWithBackground),
+                    curShow: getValue<boolean>(objects, "trendLine", "curShow", settings.trendLine.curShow),
+                    showAllPoints: getValue<boolean>(objects, "trendLine", "showAllPoints", settings.trendLine.showAllPoints),
+                    hiShow: getValue<boolean>(objects, "trendLine", "hiShow", settings.trendLine.hiShow),
+                    hiFill: getValue<Fill>(objects, "trendLine", "hiFill", settings.trendLine.hiFill),
+                    loShow: getValue<boolean>(objects, "trendLine", "loShow", settings.trendLine.loShow),
+                    loFill: getValue<Fill>(objects, "trendLine", "loFill", settings.trendLine.loFill),
+                    areaShow: getValue<boolean>(objects, "trendLine", "areaShow", settings.trendLine.areaShow),
+                    areaFill: getValue<Fill>(objects, "trendLine", "areaFill", settings.trendLine.areaFill),
+                    areaTransparency: getValue<number>(objects, "trendLine", "areaTransparency", settings.trendLine.areaTransparency),
+                },
+
+                colorBlind: {
+                     vision: getValue<string>(objects, "colorBlind", "vision", settings.colorBlind.vision)
+                }
+            }
+
+            //Adjust some properties
+            if (settings.dataLabel.locale == '') settings.dataLabel.locale = host.locale;
+            
+            //Compatibility check
+            if (settings.dataLabel.fontFamily == 'numbers') settings.dataLabel.fontFamily = 'wf_standard-font,helvetica,arial,sans-serif';
+        }   
+
+    
+        //Get DataPoints
+        let dataPoints: VisualDataPoint[] = [];
+        let hasTarget = false;
+        let hasStates = false;
+        let aggregatedValue, aggregatedStateValue, aggregatedTarget;
+
+        if (hasCategoricalData) {
+            let dataCategorical = dataViews[0].categorical;
+            let category = (dataCategorical.categories ? dataCategorical.categories[0] : null);
+            let categories = (category ? category.values : ['']);
+
+            for (let i = 0; i < categories.length; i++) {
+
+                let categoryValue = OKVizUtility.makeMeasureReadable(categories[i]);
+                if (Object.prototype.toString.call(categoryValue) === '[object Date]') {
+                    let formatter = OKVizUtility.Formatter.getFormatter({
+                        format: category.source.format,
+                        value: categoryValue,
+                        cultureSelector: settings.dataLabel.locale
+                    }); 
+                    categoryValue = formatter.format(categoryValue);
+                }
+
+                let dataPoint: VisualDataPoint;
+                let target, targetDisplayName;
+                let stateValue;
+                let states: VisualState[] = [];
+
+                for (let ii = 0; ii < dataCategorical.values.length; ii++) {
+
+                    let dataValue = dataCategorical.values[ii];
+                 
+                    let displayName =  dataValue.source.displayName;
+                    let value: any = dataValue.values[i];
+
+                    if (dataValue.source.roles['Values']){ //measure -> Values for legacy compatibility
+                        
+                        if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
+                            if (value !== null) {
+                                if (!aggregatedValue)
+                                    aggregatedValue = value;
+                                else
+                                    aggregatedValue += value;
+                            }
+                        } else if (settings.dataLabel.aggregate == 'max') {
+                            if (!aggregatedValue)
+                                aggregatedValue = dataValue.maxLocal;
+                        } else if (settings.dataLabel.aggregate == 'min') {
+                            if (!aggregatedValue)
+                                aggregatedValue = dataValue.minLocal;
+                        } else {
+                            aggregatedValue = value;
+                        }
+
+                        dataPoint = {
+                            value: value,
+                            displayName: displayName,
+                            category: categoryValue,
+                            format: dataValue.source.format,
+                            selected: false,
+                            selectionId: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
+                        };
+
+                    }
+
+                    if (dataValue.source.roles['TargetValue']){ //statesMeasure -> TargetValue for legacy compatibility
+
+                        stateValue = value;
+
+                        if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
+                            if (value !== null && !isNaN(value)) {
+
+                                if (!aggregatedStateValue)
+                                    aggregatedStateValue = value;
+                                else
+                                    aggregatedStateValue += value;
+                            }
+                        } else if (settings.dataLabel.aggregate == 'max') {
+                            if (!aggregatedStateValue)
+                                aggregatedStateValue = dataValue.maxLocal;
+                        } else if (settings.dataLabel.aggregate == 'min') {
+                            if (!aggregatedStateValue)
+                                aggregatedStateValue = dataValue.minLocal;
+                        } else {
+                            aggregatedStateValue = value;
+                        }
+                    }
+        
+                    let isTarget = (dataValue.source.roles['target']);
+                    let isState = (dataValue.source.roles['states']);
+                    
+                    if (isState || isTarget){
+
+                        if (isTarget) hasTarget = true;
+                        if (isState) hasStates = true;
+
+                         if (value !== null) {
+                             
+                             if (isTarget) {
+                                 target = value;
+                                 targetDisplayName = displayName;
+
+                                 if (settings.dataLabel.aggregate == 'sum' || settings.dataLabel.aggregate == 'avg') {
+                                    if (!aggregatedTarget) 
+                                        aggregatedTarget = value;
+                                    else
+                                        aggregatedTarget += value;
+
+                                } else if (settings.dataLabel.aggregate == 'max') {
+                                    if (!aggregatedTarget)
+                                        aggregatedTarget = dataValue.maxLocal;
+                                } else if (settings.dataLabel.aggregate == 'min') {
+                                    if (!aggregatedTarget)
+                                        aggregatedTarget = dataValue.minLocal;
+                                }
+
+                                 if (settings.states.calculate == 'modifier' || settings.states.calculate == 'percentage')
+                                    value = 0;
+                             }
+
+                            let color = getValue<Fill>(dataValue.source.objects, 'states', 'fill', null);
+
+                            let text = getValue<string>(dataValue.source.objects, 'states', 'text', displayName);
+
+                            let icon = getValue<string>(dataValue.source.objects, 'states', 'icon', 'circle');
+
+                             states.push({
+                                 value: value,
+                                 color: (color ? color.solid.color : null),
+                                 text: text,
+                                 icon: icon,
+                                 displayName: displayName,
+                                 isTarget: isTarget,
+                                 sourcePosition: states.length,
+                                 selectionId: host.createSelectionIdBuilder().withMeasure(dataValue.source.queryName).createSelectionId()
+                             });
+                         }
+                    }
+                }
+
+                if (dataPoint) {
+
+                    //Adjust states 
+                    if (!hasTarget) settings.states.calculate = 'absolute';
+
+                    if (hasStates) {
+
+                        //Sort states
+                        if (settings.states.comparison == '=') {
+                            //Do nothing
+
+                        } else {
+
+                            var order = (settings.states.comparison.indexOf('<') > -1 ? 'asc' : 'desc');
+                            states.sort(function (a,b) {
+
+                                let pos = (order == 'asc' ? a.value - b.value : b.value - a.value);
+                                if (pos) return pos;
+
+                                pos = (order == 'asc' ? a.sourcePosition - b.sourcePosition : b.sourcePosition - a.sourcePosition);
+
+                                return pos;
+                            });
+                        }
+
+                    } else {
+
+                         //Add manual states
+                        for (let s = 1; s <= 5; s++) {
+                            let v = "manualState" + s;
+                            let f = v + "Fill";
+                            let m = v + "Text";
+                            let c = v + "Icon";
+
+                            if (settings.states[v] !== null && settings.states[f]) {
+                                states.push({
+                                    value: settings.states[v],
+                                    color: settings.states[f].solid.color,
+                                    icon: settings.states[c],
+                                    text: settings.states[m],
+                                    displayName: null,
+                                    isTarget: false,
+                                    sourcePosition: s,
+                                    selectionId: null
+                                });
+                            }
+                        }
+  
+                    }
+
+                    //Move target to the last position
+                    if (hasTarget) {
+                        for (let s = 0; s < states.length; s++) {
+                            if (states[s].isTarget){
+                                let spliced = states.splice(s, 1);
+                                states = states.concat(spliced);
+                                break;
+                            }
+                        }
+                    } 
+
+                    //Assign special palette to measure bound
+                    if (hasStates) {
+                        let statesPalette = OKVizUtility.defaultPaletteForStates(states.length, settings.states.comparison);
+                        for (let s = 0; s < states.length; s++) {
+                            if (!states[s].color)
+                                states[s].color = statesPalette[s];
+                        }
+                    }
+
+                    dataPoint.states = states;
+                    dataPoint.stateValue = (stateValue !== null ? stateValue : dataPoint.value);
+                    dataPoint.target = target;
+                    dataPoint.targetDisplayName = (target == undefined ? '' : targetDisplayName);
+
+                    dataPoints.push(dataPoint);
+                }
+            }
+
+        }  
+
+        if (dataPoints.length > 1) {
+            if (settings.dataLabel.aggregate == 'avg') {
+                aggregatedValue = aggregatedValue / dataPoints.length;
+                if (aggregatedStateValue != null)
+                    aggregatedStateValue = aggregatedStateValue / dataPoints.length;
+                aggregatedTarget = aggregatedTarget / dataPoints.length;
+            }
+        }
+
+        if (dataPoints.length == 1) {
+            aggregatedValue = dataPoints[0].value;
+            aggregatedStateValue = dataPoints[0].stateValue;
+        }
+
+        return {
+            dataPoints: dataPoints,
+            value: aggregatedValue,
+            stateValue: aggregatedStateValue,
+            target: aggregatedTarget,
+            hasTarget: hasTarget,
+            hasStates: hasStates,
+            settings: settings,
+        };
+    }
+
+    export class Visual implements IVisual {
+        private meta: VisualMeta;
+        private host: IVisualHost;
+        private selectionManager: ISelectionManager;
+        private selectionIdBuilder: ISelectionIdBuilder;
+        private tooltipServiceWrapper: tooltip.ITooltipServiceWrapper;
+        private model: VisualViewModel;
+        private element: d3.Selection<HTMLElement>;
+        private window: any;
+ 
+        constructor(options: VisualConstructorOptions) {
+      
+            this.meta = {
+                name: 'Card with States',
+                version: '1.4.2',
+                dev: false
+            };
+
+            this.host = options.host;
+            this.selectionIdBuilder = options.host.createSelectionIdBuilder();
+            this.selectionManager = options.host.createSelectionManager();
+            this.tooltipServiceWrapper = tooltip.createTooltipServiceWrapper(options.host.tooltipService, options.element);
+            this.model = { dataPoints: [], hasStates: false, hasTarget: false, settings: <VisualSettings>{} };
+
+            this.element = d3.select(options.element);
+        }
+        
+        //@logErrors() //TODO Don't use in production
+        public update(options: VisualUpdateOptions) {
+
+            this.model = visualTransform(options, this.host);
+            this.element.selectAll('div, svg').remove();
+            if (this.model.dataPoints.length == 0) return;
+
+            let selectionManager  = this.selectionManager;
+            let dataPoint = this.model.dataPoints[0]; 
+            
+            let value = (this.model.dataPoints.length > 1 && this.model.settings.dataLabel.aggregate !== 'last' ? this.model.value : dataPoint.value);
+            let stateValue = (this.model.dataPoints.length > 1 && this.model.settings.dataLabel.aggregate !== 'last' ? this.model.stateValue : dataPoint.stateValue);   
+            if (stateValue == null) stateValue = value; //State Measure has been not defined, so we use Measure
+
+            let target = (this.model.dataPoints.length > 1 && this.model.settings.dataLabel.aggregate !== 'last' ? this.model.target : dataPoint.target);
+
+            let formatter = OKVizUtility.Formatter.getFormatter({
+                format: dataPoint.format,
+                value: (this.model.settings.dataLabel.unit == 0 ? this.model.value: this.model.settings.dataLabel.unit),
+                formatSingleValues: (this.model.settings.dataLabel.unit === 0),
+                allowFormatBeautification: false,
+                precision: this.model.settings.dataLabel.precision,
+                displayUnitSystemType: 3,
+                cultureSelector: this.model.settings.dataLabel.locale
+            }); 
+
+            //States
+            let stateIndex = -1;
+            if (this.model.settings.states.show) {
+
+                let diff = (target ? (stateValue - target) : 0);
+                let variance = (target ? (diff / target) : 0);
+
+                for (let i = 0; i < dataPoint.states.length; i++){
+
+                    let state = dataPoint.states[i];
+
+                    let valueToCompare = stateValue;
+                    if (this.model.settings.states.calculate == 'modifier') {
+                        valueToCompare = diff;
+                    } else if (this.model.settings.states.calculate == 'percentage') {
+                        valueToCompare = variance;
+                    }
+
+                    let found = false;
+                    if (this.model.settings.states.comparison == '>') {
+                        found = (valueToCompare > state.value);
+
+                    } else if (this.model.settings.states.comparison == '>=') {
+                        found = (valueToCompare >= state.value);
+
+                    } else if (this.model.settings.states.comparison == '<') {
+                        found = (valueToCompare < state.value);
+
+                    } else if (this.model.settings.states.comparison == '<=') {
+                        found = (valueToCompare <= state.value);
+
+                    } else { //=
+                        found = (valueToCompare == state.value);
+
+                    }
+
+                    //State found -> exit
+                    if (found) {
+                        stateIndex = i;
+                        break;
+                    }
+                }
+            } 
+
+            let margin = {top: 0, left: 0, bottom: 0, right: 0};
+            let padding = {top: 0, left: 5, bottom: 0, right: 5};
+            let containerSize = {
+                width: options.viewport.width - margin.left - margin.right,
+                height: options.viewport.height - margin.top - margin.bottom
+            };
+
+            let container =  this.element
+                .append('div')
+                .classed('chart', true)
+                .style({
+                    'width' :  containerSize.width + 'px',
+                    'height':  containerSize.height + 'px',
+                    'margin-top': margin.top + 'px',
+                    'margin-left': margin.left + 'px'
+                });
+            
+             if (stateIndex > -1) {
+                if (this.model.settings.states.behavior == 'backcolor') {
+                    container.style('background-color', dataPoint.states[stateIndex].color); 
+                }
+             }
+   
+            let svgContainer = container
+                .append('svg')
+                .attr('width', containerSize.width)
+                .attr('height', containerSize.height)
+                .append('g');
+             
+            //Data Label
+            let dataLabelFontSize = PixelConverter.fromPoint(this.model.settings.dataLabel.fontSize);
+            let dataLabelValue = TextUtility.getTailoredTextOrDefault({
+                text: formatter.format(value),
+                fontSize: dataLabelFontSize,
+                fontFamily: this.model.settings.dataLabel.fontFamily  
+            }, containerSize.width - padding.left - padding.right);  
+            
+            let dataLabelColor : string = (this.model.settings.states.show ?  this.model.settings.states .baseFill : this.model.settings.dataLabel.fill).solid.color;
+            
+            if (this.model.settings.colorCode.direction == "highisgood" && value > target || this.model.settings.colorCode.direction == "lowisgood" && value < target ) {
+                dataLabelColor = this.model.settings.colorCode.goodFill.solid.color
+            } else
+            {
+                dataLabelColor = this.model.settings.colorCode.badFill.solid.color
+            }
+
+            
+            if (stateIndex > -1) {
+                if (this.model.settings.states.behavior == 'forecolor' || this.model.settings.states.behavior == 'label') {    
+                    dataLabelColor = dataPoint.states[stateIndex].color;
+                } else if (this.model.settings.states.behavior == 'backcolor') {
+
+                    dataLabelColor = (this.model.settings.dataLabel.fillWithBackground ?  this.model.settings.dataLabel.fillWithBackground.solid.color :  OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color));
+                }
+            }      
+
+            let incrementalPos = {
+                x: (containerSize.width / 2),
+                y: padding.top + 15
+            };
+
+            let dataLabel = svgContainer.append('text')
+                .attr('x', incrementalPos.x)
+                .attr('y', incrementalPos.y)
+                //.attr('dominant-baseline', 'hanging')
+                .style({
+                    'font-size': dataLabelFontSize,
+                    'fill': dataLabelColor,
+                    'font-family': this.model.settings.dataLabel.fontFamily,
+                    'text-anchor': 'middle',
+                    'border': '1px solid #000'
+                }) 
+                .text(dataLabelValue); 
+                
+            let dataLabelNode = <any>dataLabel.node();
+            let dataLabelBBox = dataLabelNode.getBBox();
+
+            dataLabel.attr('y', incrementalPos.y + (dataLabelBBox.height / 2));
+
+            //Variance
+            if (this.model.settings.dataLabel.variance && this.model.hasTarget) {
+                // console.log("Entered variance logic")
+
+                let diff = (value - target);
+                let variance = (diff / target);
+                let varianceValue = (target == undefined ? '(Blank)' : (variance > 0 ? '+':'') + (this.model.settings.dataLabel.varianceType == 'percentage' ? ((variance * 100).toFixed(this.model.settings.dataLabel.variancePrecision == null ? 2: this.model.settings.dataLabel.variancePrecision)) + '%' : formatter.format(diff)));
+                let varianceFontSize = PixelConverter.fromPoint(this.model.settings.dataLabel.fontSize / 100 * this.model.settings.dataLabel.varianceFontSize);
+                let varianceWidth = TextUtility.measureTextWidth({
+                    text: varianceValue,
+                    fontSize: varianceFontSize,
+                    fontFamily: this.model.settings.dataLabel.fontFamily
+                });
+
+                let varianceColor = (this.model.settings.states.show ?  this.model.settings.states .baseFill : this.model.settings.dataLabel.fill).solid.color;
+                if (stateIndex > -1) {
+                    if (this.model.settings.states.behavior == 'variance' || this.model.settings.states.behavior == 'forecolor') {
+                        varianceColor = dataPoint.states[stateIndex].color;
+                    } else if (this.model.settings.states.behavior == 'backcolor') {
+                        varianceColor = (this.model.settings.dataLabel.fillWithBackground ?  this.model.settings.dataLabel.fillWithBackground.solid.color :  OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color));
+                    }
+                }
+
+                let varianceLabel = svgContainer.append('text')
+                    .attr('x', incrementalPos.x)
+                    .attr('y', incrementalPos.y)
+                    //.attr('dominant-baseline', 'hanging')
+                    .style({
+                        'font-size': varianceFontSize,
+                        'fill': varianceColor,
+                        'font-family': this.model.settings.dataLabel.fontFamily,
+                        'text-anchor': 'middle'
+                    })
+                    .text(varianceValue);
+
+                let varianceLabelNode = <any>varianceLabel.node();
+                let varianceLabelBBox = varianceLabelNode.getBBox();
+                
+                if (this.model.settings.dataLabel.variancePosition == 'right') {
+                    dataLabel.attr('transform', 'translate(' + (-(varianceWidth/2) - 4) + ',0)');
+                    varianceLabel.attr('x', incrementalPos.x + (dataLabelBBox.width / 2) + 8)
+                    varianceLabel.attr('y', incrementalPos.y + (dataLabelBBox.height / 2));
+
+                } else if (this.model.settings.dataLabel.variancePosition == 'bottom') {
+                    
+                    varianceLabel.attr('y', incrementalPos.y + dataLabelBBox.height + (varianceLabelBBox.height / 2) - 5);
+                    incrementalPos.y += (varianceLabelBBox.height / 2) + 10;
+                }
+                
+            }
+
+            
+            incrementalPos.y += dataLabelBBox.height;
+
+            //Category Label
+            if (this.model.settings.categoryLabel.show) {
+
+                let categoryLabelFontSize = PixelConverter.fromPoint(this.model.settings.categoryLabel.fontSize);
+
+                let rawCategoryLabelValue = dataPoint.displayName;
+                if (this.model.settings.categoryLabel.type == 'measure_with_aggregation') {
+                    if (this.model.settings.dataLabel.aggregate == 'last')
+                        rawCategoryLabelValue = (dataPoint.category != '' ? dataPoint.category + ': ' : '') + rawCategoryLabelValue;
+                    else if (this.model.settings.dataLabel.aggregate == 'avg')
+                        rawCategoryLabelValue = 'Average of ' + rawCategoryLabelValue;
+                    else if (this.model.settings.dataLabel.aggregate == 'min')
+                        rawCategoryLabelValue = 'Min of ' + rawCategoryLabelValue;
+                    else if (this.model.settings.dataLabel.aggregate == 'max')
+                        rawCategoryLabelValue = 'Max of ' + rawCategoryLabelValue;
+
+                } else if (this.model.settings.categoryLabel.type == 'category') {
+                    rawCategoryLabelValue = dataPoint.category;
+                 } else if (this.model.settings.categoryLabel.type == 'budget_with_percentage') {
+                     let diff = (value - target);
+                     let variance = diff / target;
+                     let varianceValue = (target == undefined ? '(Blank)' : (variance > 0 ? '+':'') + (this.model.settings.dataLabel.varianceType == 'percentage' ? ((variance * 100).toFixed(this.model.settings.dataLabel.variancePrecision == null ? 2: this.model.settings.dataLabel.variancePrecision)) + '%' : formatter.format(diff)));
+                    rawCategoryLabelValue = 'Budget: ' + formatter.format(dataPoint.target) + formatter.format(varianceValue);
+                } else if (this.model.settings.categoryLabel.type == 'custom') {
+                    rawCategoryLabelValue = this.model.settings.categoryLabel.text;
+                } else {
+                    if (this.model.settings.dataLabel.variance && this.model.hasTarget && dataPoint.targetDisplayName != '')
+                        rawCategoryLabelValue += ' (vs. ' +  dataPoint.targetDisplayName + ')';
+                }
+
+                let categoryLabelValue = rawCategoryLabelValue;
+                if (!this.model.settings.categoryLabel.wordWrap && rawCategoryLabelValue && rawCategoryLabelValue != '') {
+                    categoryLabelValue = TextUtility.getTailoredTextOrDefault({
+                        text: rawCategoryLabelValue,
+                        fontSize: categoryLabelFontSize,
+                        fontFamily: this.model.settings.categoryLabel.fontFamily
+                    }, containerSize.width - padding.left - padding.right);  
+                }
+
+                let categoryLabel = svgContainer.append('text')
+                    .attr('x', incrementalPos.x)
+                    .attr('y', incrementalPos.y) 
+                    //.attr('dominant-baseline', 'hanging')
+                    .style({
+                        'font-size': categoryLabelFontSize,
+                        'font-family': this.model.settings.categoryLabel.fontFamily,
+                        'fill': (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.categoryLabel.fillWithBackground ? this.model.settings.categoryLabel.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.categoryLabel.fill.solid.color),
+                        'text-anchor': 'middle'
+                    })
+                    .text(categoryLabelValue);
+
+
+                let categoryLabelNode = <any>categoryLabel.node();
+                let categoryLabelBBox = categoryLabelNode.getBBox();
+
+                categoryLabel.attr('y', incrementalPos.y + (categoryLabelBBox.height / 2)) 
+
+                if (this.model.settings.categoryLabel.wordWrap) {
+
+                    TextUtility.wrapAxis(categoryLabel, containerSize.width - padding.left - padding.right);
+                    
+                }
+
+                incrementalPos.y += categoryLabelNode.getBBox().height;
+            }
+
+            //Message label
+            
+            if (stateIndex > -1 && this.model.settings.states.showMessages && dataPoint.states[stateIndex].text && dataPoint.states[stateIndex].text !== '') {
+                incrementalPos.y += 5;
+
+                let iconSize = (!dataPoint.states[stateIndex].icon || dataPoint.states[stateIndex].icon == '' ? 0 : ((PixelConverter.fromPointToPixel(this.model.settings.states.fontSize)/2)));
+
+                let messageLabelFontSize = PixelConverter.fromPoint(this.model.settings.states.fontSize);
+                let messageLabelValue = TextUtility.getTailoredTextOrDefault({
+                        text: dataPoint.states[stateIndex].text,
+                        fontSize: messageLabelFontSize,
+                        fontFamily: this.model.settings.states.fontFamily
+                    }, containerSize.width - padding.left - padding.right); 
+
+                let messageLabel = svgContainer.append('text')
+                    .attr('x', incrementalPos.x + iconSize)
+                    .attr('y', incrementalPos.y)
+                    //.attr('dominant-baseline', 'hanging')
+                    .style({
+                        'font-size': messageLabelFontSize,
+                        'font-family': this.model.settings.states.fontFamily,
+                        'fill': (this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  '#a6a6a6'),
+                        'text-anchor': 'middle'
+                    })
+                    .text(messageLabelValue);
+
+                
+                let messageLabelNode = <any>messageLabel.node();
+                let messageBBox = messageLabelNode.getBBox();
+                messageLabel.attr('y', incrementalPos.y + (messageBBox.height / 2))
+
+                if (dataPoint.states[stateIndex].icon == 'circle') {
+                    //iconSize += 2;
+                    svgContainer
+                        .append('circle')
+                        .attr('cx', incrementalPos.x - (messageBBox.width / 2) - (iconSize / 2))
+                        .attr('cy', incrementalPos.y + (messageBBox.height / 2) - (iconSize / 2))
+                        .attr('r', (iconSize / 2))
+                        .attr('fill', (this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  dataPoint.states[stateIndex].color));
+
+                } else if (dataPoint.states[stateIndex].icon == 'up' || dataPoint.states[stateIndex].icon == 'down') {
+
+                    svgContainer
+                        .append('path')
+                        .attr("transform", function(d) { return "translate(" + (incrementalPos.x - (messageBBox.width / 2) - (iconSize / 2)) + "," + (incrementalPos.y + (messageBBox.height / 2) - (iconSize/2)) + ")"; })
+                        .attr("d", d3.svg.symbol().type("triangle-" + dataPoint.states[stateIndex].icon))
+                        .attr('fill', (this.model.settings.states.behavior == 'backcolor' ? OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color) :  dataPoint.states[stateIndex].color));
+
+                } else if (dataPoint.states[stateIndex].icon == 'good') {
+                    //TODO
+                } else if (dataPoint.states[stateIndex].icon == 'bad') {
+                    //TODO
+                }
+
+                incrementalPos.y += messageBBox.height;
+            }
+
+            //Trend line
+            let self = this;
+            if (this.model.dataPoints.length > 1) {
+
+                //We use this method and not d3.extent because we need to know hi/low index points
+                //d3.extent(this.model.dataPoints, function(d) { return d.value; });
+                let topValue = {indexes: [], value:0};
+                let bottomValue = {indexes: [], value:Infinity};
+                for (let ii = 0; ii < this.model.dataPoints.length; ii++){
+                    if (this.model.dataPoints[ii].value > topValue.value) {
+                        topValue.indexes = [ii];
+                        topValue.value = this.model.dataPoints[ii].value;
+                    } else if (this.model.dataPoints[ii].value == topValue.value) {
+                        topValue.indexes.push(ii);
+                    }
+
+                    if (this.model.dataPoints[ii].value < bottomValue.value) {
+                        bottomValue.indexes = [ii];
+                        bottomValue.value = this.model.dataPoints[ii].value;
+                    } else if (this.model.dataPoints[ii].value == bottomValue.value) {
+                        bottomValue.indexes.push(ii);
+                    }
+                }
+
+                let yStart = (typeof this.model.settings.trendLine.start !== 'undefined' ? Math.min(bottomValue.value, this.model.settings.trendLine.start) : bottomValue.value);
+                
+                let yEnd = (typeof this.model.settings.trendLine.end !== 'undefined' ? Math.max(topValue.value, this.model.settings.trendLine.end) : topValue.value);
+
+                let ray = this.model.settings.trendLine.weight * 2;
+
+                let trendlineHeight = containerSize.height - incrementalPos.y - 10 - padding.bottom - ray;
+                if (trendlineHeight > 1) {
+                    
+                    let trendlineContainer = svgContainer.append('g')
+                                                .style('pointer-events', 'all');
+
+                    let x = d3.scale.linear()
+                        .domain([this.model.dataPoints.length - 1, 0])
+                        .range([ray, containerSize.width - padding.left - padding.right - ray]);
+                    
+                    let y = d3.scale.linear()
+                        .domain([yStart, yEnd]) 
+                        .range([containerSize.height - padding.bottom - ray, incrementalPos.y + 10]);
+
+                    let line = d3.svg.line()
+                        .x(function(d: any, j: any) { 
+                            return x(j); 
+                        })
+                        .y(function(d: any) { 
+                            return y(d.value); 
+                        })
+                        .interpolate(this.model.settings.trendLine.interpolation);
+
+                    if (this.model.settings.trendLine.areaShow) {
+                        let area = d3.svg.area()
+                        .x(function(d: any,j: any) { 
+                            return x(j); 
+                        })
+                        .y0(containerSize.height)
+                        .y1(function(d: any) { 
+                            return y(d.value);
+                        })
+                        .interpolate(this.model.settings.trendLine.interpolation);
+
+                        let chartArea =  trendlineContainer.append("path").data([this.model.dataPoints])
+                        .classed('sparklineArea', true)
+                        chartArea.attr("d", <any>area)
+                            .attr('fill', this.model.settings.trendLine.areaFill.solid.color)
+                            .attr('fill-opacity', this.model.settings.trendLine.areaTransparency / 100);
+                    }
+
+                    trendlineContainer.append("path").data([this.model.dataPoints])
+                        .classed('sparkline', true)
+                        .attr("d", <any>line)
+                        .attr('stroke-linecap', 'round')
+                        .attr('stroke-width', this.model.settings.trendLine.weight)
+                        .attr('stroke', (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color))
+                        .attr('fill', 'none');
+
+
+                     if (this.model.settings.trendLine.curShow) {
+                         let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color);
+
+                        trendlineContainer.append('circle')
+                            .classed('point fixed', true)
+                            .attr('cx', x(0))
+                            .attr('cy', y(dataPoint.value))
+                            .attr('r', ray)
+                            .attr('fill', color);
+                            
+                    }
+
+                    let self = this;
+                    if (this.model.settings.trendLine.showAllPoints) {
+         
+                        for (let ii = 0; ii < this.model.dataPoints.length; ii++) {
+                            let val = this.model.dataPoints[ii].value;
+                            if (val == undefined || val == null) continue;
+
+                            let color = (stateIndex > -1 && this.model.settings.states.behavior == 'backcolor' ? (this.model.settings.trendLine.fillWithBackground ? this.model.settings.trendLine.fillWithBackground.solid.color : OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  this.model.settings.trendLine.fill.solid.color);
+                            if (this.model.settings.trendLine.hiShow && topValue.value == val) {
+                                color = this.model.settings.trendLine.hiFill.solid.color;
+
+                            } else if (this.model.settings.trendLine.loShow && bottomValue.value == val) {
+                                color = this.model.settings.trendLine.loFill.solid.color;
+                            }
+
+                            var circle = trendlineContainer.append('circle')
+                                .classed('point', true);
+                            
+                            circle
+                                .data([[<VisualTooltipDataItem>{
+                                        header: self.model.dataPoints[ii].category,
+                                        displayName: dataPoint.displayName,
+                                        value: formatter.format(val),
+                                        color: (color.substr(1, 3) == '333' ? '#000' : color),
+                                        markerShape: 'circle'
+                                    }]])
+                                .attr('cx', x(ii))
+                                .attr('cy', y(val))
+                                .attr('r', ray)
+                                .attr('fill', color)
+                                .on('click', function(d) {
+                                    self.selectionManager.select(self.model.dataPoints[ii].selectionId).then((ids: ISelectionId[]) => {
+
+                                        let selection = (ids.length > 0);
+                                        d3.selectAll('.point').attr({ 'fill-opacity': (selection ? 0.3 : 1)});
+                                        d3.selectAll('.sparkline').attr({ 'stroke-opacity': (selection ? 0.3 : 1) });
+                                        if (selection)
+                                            d3.select(this).attr({ 'fill-opacity': 1 });
+                                    });
+
+                                    (<Event>d3.event).stopPropagation();
+                                });
+                        }
+       
+                        this.tooltipServiceWrapper.addTooltip(trendlineContainer.selectAll('.point'), 
+                            function(tooltipEvent: TooltipEventArgs<number>){
+                                if (tooltipEvent)
+                                    return <any>tooltipEvent.data; 
+                                return null;
+                            }, 
+                            (tooltipEvent: TooltipEventArgs<number>) => null
+                        );
+                        
+                    } else {
+
+                        if (stateIndex == -1 || this.model.settings.states.behavior != 'backcolor') {
+
+                            if (this.model.settings.trendLine.hiShow) {
+                                let color = this.model.settings.trendLine.hiFill.solid.color;
+
+                                for (let xx = 0; xx < topValue.indexes.length; xx++) {
+                                    trendlineContainer.append('circle')
+                                        .classed('point fixed', true)
+                                        .attr('cx', x(topValue.indexes[xx]))
+                                        .attr('cy', y(topValue.value))
+                                        .attr('r', ray)
+                                        .attr('fill', color);  
+                                }
+                            }
+
+
+                            if (this.model.settings.trendLine.loShow) {
+                                let color = this.model.settings.trendLine.loFill.solid.color;
+                                for (let xx = 0; xx < bottomValue.indexes.length; xx++) {
+                                    trendlineContainer.append('circle')
+                                        .classed('point fixed', true)
+                                        .attr('cx', x(bottomValue.indexes[xx]))
+                                        .attr('cy', y(bottomValue.value))
+                                        .attr('r', ray)
+                                        .attr('fill', color);  
+                                }
+                            }
+                        }
+
+                        //Tooltips
+                        
+                        let hidePointTimeout;
+                        trendlineContainer.on('mousemove', function(){
+
+                            clearTimeout(hidePointTimeout);
+
+                            let coord = [0, 0];
+                            coord = d3.mouse(this);
+
+                            let foundIndex = -1;
+                            for (let ii = 0; ii < self.model.dataPoints.length; ii++) {
+                                if (coord[0] == x(ii)) {
+                                    foundIndex = ii;
+                                    break;
+                                } else if (coord[0] < x(ii) - ((x(ii) - x(ii-1))/2)) {
+                                    foundIndex = ii;
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            let circle = trendlineContainer.select('.point:not(.fixed):not(.keep)');
+                            if (foundIndex == -1) {
+                                circle.remove();
+                            } else {
+                                if (circle.empty())
+                                    circle = trendlineContainer.append('circle').classed('point', true);
+                                
+                                let val = self.model.dataPoints[foundIndex].value;
+                                let color = (stateIndex > -1 && self.model.settings.states.behavior == 'backcolor' ? (self.model.settings.trendLine.fillWithBackground ? self.model.settings.trendLine.fillWithBackground.solid.color :OKVizUtility.autoTextColor(dataPoint.states[stateIndex].color)) :  self.model.settings.trendLine.fill.solid.color);
+                                if (self.model.settings.trendLine.hiShow && topValue.value == val) {
+                                    color = self.model.settings.trendLine.hiFill.solid.color;
+
+                                } else if  (self.model.settings.trendLine.loShow && bottomValue.value == val) {
+                                    color = self.model.settings.trendLine.loFill.solid.color;
+                                }
+
+                                circle
+                                    .attr('cx', x(foundIndex))
+                                    .attr('cy', y(val))
+                                    .attr('r', ray)
+                                    .attr('fill', color)  
+                                    .on('click', function(d) {
+                                        selectionManager.select(self.model.dataPoints[foundIndex].selectionId).then((ids: ISelectionId[]) => {
+                                            
+                                            let selection = (ids.length > 0);
+                                            d3.selectAll('.point.fixed').attr({ 'fill-opacity': (selection ? 0.3 : 1) });
+                                            d3.selectAll('.sparkline').attr({ 'stroke-opacity': (selection ? 0.3 : 1) });
+                                            d3.selectAll('.point.keep').classed('keep', false);
+
+                                            if (selection) 
+                                                d3.select(this).classed('keep', true).attr({ 'fill-opacity': 1 });
+
+                                            d3.selectAll('.point:not(.fixed):not(.keep)').remove();
+                                        });
+
+                                        (<Event>d3.event).stopPropagation();
+                                    });
+                
+                                    
+                                self.tooltipServiceWrapper.addTooltip(circle, 
+                                    function(eventArgs: TooltipEventArgs<TooltipEnabledDataPoint>){
+                                        return [<VisualTooltipDataItem>{
+                                            header: self.model.dataPoints[foundIndex].category,
+                                            displayName: dataPoint.displayName,
+                                            value: (val == undefined ? '(Blank)' : formatter.format(val)),
+                                            color: (color.substr(1, 3) == '333' ? '#000' : color),
+                                            markerShape: 'circle'
+                                        }]; 
+                                    }, null, true
+                                );
+                            }
+    
+                        });
+                        trendlineContainer.on('mouseenter', function(){ 
+                            clearTimeout(hidePointTimeout);
+                        });
+                        trendlineContainer.on('mouseleave', function(){ 
+                            hidePointTimeout = setTimeout(function(){
+                                svgContainer.selectAll('.point:not(.fixed):not(.keep)').remove();
+                            }, 500);
+                        });
+                    }
+                }
+
+
+            } else {
+
+                if (this.model.settings.dataLabel.alignment == 'middle') {
+                    svgContainer.attr('transform', 'translate(0, ' + (((containerSize.height -padding.bottom  - incrementalPos.y) / 2)-margin.top) + ')');
+
+                } 
+
+            }
+
+            //Bookmarks 
+            /*this.selectionManager.registerOnSelectCallback(
+                (ids: ISelectionId[]) => {
+                    self.model.dataPoints.forEach(dataPoint => {
+                
+                        if ((<any>ids).equals(dataPoint.selectionId)) {
+                            dataPoint.selected = true;
+                        }
+                    });
+                });
+            */
+
+            //Color Blind module
+            OKVizUtility.applyColorBlindVision(this.model.settings.colorBlind.vision, this.element);
+        }    
+
+        public destroy(): void {
+
+        }
+
+        public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+            var objectName = options.objectName;
+            var objectEnumeration: VisualObjectInstance[] = [];
+
+            switch(objectName) {
+                
+                 case 'dataLabel':
+
+                    if (this.model.dataPoints.length > 1) {
+                         objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "aggregate": this.model.settings.dataLabel.aggregate
+                            },
+                            selector: null
+                        });
+                    } else {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "alignment": this.model.settings.dataLabel.alignment
+                            },
+                            selector: null
+                        });
+                    }
+
+                    if (this.model.settings.states.show) {
+                        if (this.model.settings.states.behavior == 'backcolor') {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fillWithBackground": this.model.settings.dataLabel.fillWithBackground
+                                },
+                                selector: null
+                            });
+                        }
+                    } else {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fill": this.model.settings.dataLabel.fill
+                            },
+                            selector: null
+                        });
+                    }
+
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "unit": this.model.settings.dataLabel.unit,
+                            "precision": this.model.settings.dataLabel.precision,
+                            "locale": this.model.settings.dataLabel.locale,
+                            "fontSize": this.model.settings.dataLabel.fontSize,
+                            "fontFamily": this.model.settings.dataLabel.fontFamily
+                            
+                        },
+                        validValues: {
+                            "precision": {
+                                numberRange: {
+                                    min: 0,
+                                    max: 15
+                                }
+                            }
+                        },
+                        selector: null
+                    });
+  
+                    if (this.model.hasTarget) {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "variance": this.model.settings.dataLabel.variance
+                            },
+                            selector: null
+                        });
+                    }
+
+                    if (this.model.settings.dataLabel.variance) {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "varianceType": this.model.settings.dataLabel.varianceType,
+                                "variancePosition": this.model.settings.dataLabel.variancePosition,
+                                "varianceFontSize": this.model.settings.dataLabel.varianceFontSize,
+                                "variancePrecision": this.model.settings.dataLabel.variancePrecision
+                            },
+                            validValues: {
+                                "variancePrecision": {
+                                    numberRange: {
+                                        min: 0,
+                                        max: 15
+                                    }
+                                }
+                            },
+                            selector: null
+                        });
+                    }
+
+                    break;
+
+                case 'categoryLabel': 
+
+                    if (this.model.settings.states.show && this.model.settings.states.behavior == 'backcolor') {
+                         objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fillWithBackground": this.model.settings.categoryLabel.fillWithBackground
+                            },
+                            selector: null
+                        });
+                    } else {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fill": this.model.settings.categoryLabel.fill
+                            },
+                            selector: null
+                        });
+                    }
+
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "show": this.model.settings.categoryLabel.show,
+                            "fontSize": this.model.settings.categoryLabel.fontSize,
+                            "fontFamily": this.model.settings.categoryLabel.fontFamily,
+                            "wordWrap": this.model.settings.categoryLabel.wordWrap,
+                            "type": this.model.settings.categoryLabel.type
+                        },
+                        selector: null
+                    });
+
+                    if (this.model.settings.categoryLabel.type == 'custom') {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "text": this.model.settings.categoryLabel.text
+                            },
+                            selector: null
+                        });
+                    }
+
+                    break;
+                
+                case 'colorCode' :
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "direction": this.model.settings.colorCode.direction,
+                            "goodFill": this.model.settings.colorCode.goodFill,
+                            "badFill": this.model.settings.colorCode.badFill
+                        },
+                        selector: null
+                    });
+
+                    break;
+
+                case 'states':
+
+                     objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "show": this.model.settings.states.show,
+                            "behavior": this.model.settings.states.behavior,
+                            "showMessages": this.model.settings.states.showMessages     
+                        },
+                        selector: null
+                    });
+
+                    if (this.model.settings.states.showMessages) {
+                         objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "fontSize": this.model.settings.states.fontSize,
+                                "fontFamily": this.model.settings.states.fontFamily
+                            },
+                            selector: null
+                        });
+                    }
+
+                    if (this.model.hasTarget) {
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "calculate": this.model.settings.states.calculate
+                            },
+                            selector: null
+                        });
+                    }
+
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "comparison": this.model.settings.states.comparison,
+                            "baseFill": this.model.settings.states.baseFill
+                        },
+                        selector: null
+                    });
+
+                     if (!this.model.hasStates) {
+
+                        for (let i = 1; i <= 5; i++) {
+
+                            let v = "manualState" + i;
+                            let f = v + "Fill";
+                            let m = v + "Text";
+                            let c = v + "Icon";
+
+                            let s: any = {};
+                            s[f] = this.model.settings.states[f];
+                            s[v] = this.model.settings.states[v];
+                            if (this.model.settings.states.showMessages) {
+                                s[m] = this.model.settings.states[m];
+                                s[c] = this.model.settings.states[c];
+                            }
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: s,
+                                selector: null
+                            });
+                        } 
+                    }
+
+                    if (this.model.dataPoints.length > 0) {
+                        for(let i = 0; i < this.model.dataPoints[0].states.length; i++) {
+                            let state = this.model.dataPoints[0].states[i];
+                            if (state.selectionId) {
+                                objectEnumeration.push({
+                                    objectName: objectName,
+                                    displayName: state.displayName + (state.isTarget ? ' (target)' : ''),
+                                    properties: {
+                                        "fill": { solid: { color: state.color } }
+                                    },
+                                    selector: state.selectionId.getSelector()
+                                });
+
+                                if (this.model.settings.states.showMessages) {
+
+                                    objectEnumeration.push({
+                                        objectName: objectName,
+                                        displayName: state.displayName + " message",
+                                        properties: {
+                                            "text": state.text
+                                        },
+                                        selector: state.selectionId.getSelector()
+                                    }); 
+
+                                    objectEnumeration.push({
+                                        objectName: objectName,
+                                        displayName: state.displayName + " icon",
+                                        properties: {
+                                            "icon": state.icon
+                                        },
+                                        selector: state.selectionId.getSelector()
+                                    });
+
+                                }
+                            }
+                        }
+                    }
+ 
+                    break;
+  
+                case 'trendLine':  
+
+                    if (this.model.dataPoints.length > 1) {
+
+                        if (this.model.settings.states.show && this.model.settings.states.behavior == 'backcolor') {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fillWithBackground": this.model.settings.trendLine.fillWithBackground
+                                },
+                                selector: null
+                            });
+                        } else {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "fill": this.model.settings.trendLine.fill
+                                },
+                                selector: null
+                            });
+                        }
+
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "start": this.model.settings.trendLine.start,
+                                "end": this.model.settings.trendLine.end,
+                                "interpolation": this.model.settings.trendLine.interpolation,
+                                "weight": this.model.settings.trendLine.weight,
+                                "showAllPoints": this.model.settings.trendLine.showAllPoints,
+                                "curShow": this.model.settings.trendLine.curShow,
+                                "hiShow": this.model.settings.trendLine.hiShow
+                            },
+                            validValues: {
+                                "weight": {
+                                    numberRange: {
+                                        min: 1,
+                                        max: 20
+                                    }
+                                }
+                            },
+                            selector: null
+                        });
+
+                        if (this.model.settings.trendLine.hiShow) {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "hiFill": this.model.settings.trendLine.hiFill
+                                },
+                                selector: null
+                            });
+                        }
+
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "loShow": this.model.settings.trendLine.loShow
+                            },
+                            selector: null
+                        });
+
+                        if (this.model.settings.trendLine.loShow) {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "loFill": this.model.settings.trendLine.loFill
+                                },
+                                selector: null
+                            });
+                        }
+
+                        objectEnumeration.push({
+                            objectName: objectName,
+                            properties: {
+                                "areaShow": this.model.settings.trendLine.areaShow
+                            },
+                            selector: null
+                        });
+
+                        if (this.model.settings.trendLine.areaShow) {
+                            objectEnumeration.push({
+                                objectName: objectName,
+                                properties: {
+                                    "areaFill": this.model.settings.trendLine.areaFill,
+                                    "areaTransparency": this.model.settings.trendLine.areaTransparency
+                                },
+                                validValues: {
+                                    "areaTransparency": {
+                                        numberRange: {
+                                            min: 0,
+                                            max: 100
+                                        }
+                                    }
+                                },
+                                selector: null
+                            });
+                        }
+                    }
+
+                    break;
+                
+                case 'colorBlind':
+                    
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "vision": this.model.settings.colorBlind.vision
+                        },
+                        selector: null
+                    });
+
+                    break;
+                
+                case 'about':
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            "version": this.meta.version + (this.meta.dev ? ' BETA' : '')
+                        },
+                        selector: null
+                    });
+                    break;
+
+            };
+
+            return objectEnumeration;
+        }
+
+    }
+}

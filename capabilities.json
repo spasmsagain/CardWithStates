@@ -2,7 +2,7 @@
     "dataRoles": [
         {
             "displayName": "Measure",
-            "name": "Values", 
+            "name": "Values",
             "kind": "Measure"
         },
         {
@@ -29,7 +29,21 @@
     "dataViewMappings": [
         {
             "conditions": [
-                { "Values": { "max": 1, "min": 1 }, "target": { "max": 1 }, "TargetValue": { "max": 1 }, "axis": { "max": 1 } }
+                {
+                    "Values": {
+                        "max": 1,
+                        "min": 1
+                    },
+                    "target": {
+                        "max": 1
+                    },
+                    "TargetValue": {
+                        "max": 1
+                    },
+                    "axis": {
+                        "max": 1
+                    }
+                }
             ],
             "categorical": {
                 "categories": {
@@ -37,38 +51,56 @@
                         "in": "axis"
                     },
                     "dataReductionAlgorithm": {
-                        "top": { 
-                            "count": 1000000 
-                        } 
+                        "top": {
+                            "count": 1000000
+                        }
                     }
                 },
                 "values": {
-                    "select":[
-                        { "bind": { "to": "Values" } },
-                        { "bind": { "to": "target" } },
-                        { "bind": { "to": "TargetValue" } },
-                        { "bind": { "to": "states" } },
-                        { "bind": { "to": "tooltips" } }
+                    "select": [
+                        {
+                            "bind": {
+                                "to": "Values"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "target"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "TargetValue"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "states"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "tooltips"
+                            }
+                        }
                     ],
                     "dataReductionAlgorithm": {
-                        "top": { 
-                            "count": 1000000 
-                        } 
+                        "top": {
+                            "count": 1000000
+                        }
                     }
                 }
             }
         }
     ],
     "objects": {
-
         "dataLabel": {
             "displayName": "Data label",
             "properties": {
-
-                 "aggregate": {
-                   "displayName": "Value",
-                   "type": {
-                         "enumeration": [
+                "aggregate": {
+                    "displayName": "Value",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "Last",
                                 "value": "last"
@@ -84,15 +116,14 @@
                             {
                                 "displayName": "Minimun",
                                 "value": "min"
-                            }, 
+                            },
                             {
                                 "displayName": "Maximum",
                                 "value": "max"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
                 "alignment": {
                     "displayName": "Alignment",
                     "type": {
@@ -101,14 +132,13 @@
                                 "displayName": "Top",
                                 "value": "top"
                             },
-                                {
+                            {
                                 "displayName": "Middle",
                                 "value": "middle"
                             }
                         ]
                     }
                 },
-
                 "fill": {
                     "displayName": "Color",
                     "type": {
@@ -118,7 +148,7 @@
                             }
                         }
                     }
-                }, 
+                },
                 "fillWithBackground": {
                     "displayName": "Color",
                     "type": {
@@ -130,24 +160,22 @@
                             }
                         }
                     }
-                }, 
-                
+                },
                 "unit": {
-                   "displayName": "Display unit",
-                   "type": {
-                       "formatting": {
+                    "displayName": "Display unit",
+                    "type": {
+                        "formatting": {
                             "labelDisplayUnits": true
                         }
-                   }
-                }, 
-                "precision": {
-                   "displayName": "Decimal places",
-                   "placeHolderText": "Auto",
-                   "type": {
-                       "numeric": true
-                   }
+                    }
                 },
-                
+                "precision": {
+                    "displayName": "Decimal places",
+                    "placeHolderText": "Auto",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "locale": {
                     "displayName": "Culture code",
                     "placeHolderText": "Auto",
@@ -155,16 +183,14 @@
                         "text": true
                     }
                 },
-
                 "fontSize": {
                     "displayName": "Text size",
-                    "type": { 
-                        "formatting": { 
-                            "fontSize": true 
-                        } 
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
                     }
                 },
-
                 "fontFamily": {
                     "displayName": "Font family",
                     "type": {
@@ -268,7 +294,6 @@
                         ]
                     }
                 },
-
                 "variance": {
                     "displayName": "Variance",
                     "type": {
@@ -304,40 +329,37 @@
                             }
                         ]
                     }
-                 },
+                },
                 "variancePrecision": {
-                   "displayName": "Variance decimal places",
-                   "placeHolderText": "Auto",
-                   "type": {
-                       "numeric": true
-                   }
+                    "displayName": "Variance decimal places",
+                    "placeHolderText": "Auto",
+                    "type": {
+                        "numeric": true
+                    }
                 },
                 "varianceFontSize": {
                     "displayName": "Variance text size %",
-                    "type": { 
-                        "formatting": { 
-                            "fontSize": true 
-                        } 
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
                     }
                 }
             }
         },
-
         "categoryLabel": {
             "displayName": "Category label",
             "properties": {
                 "show": {
-                   "displayName": "Show",
-                   "type": {
-                       "bool": true
-                   }
+                    "displayName": "Show",
+                    "type": {
+                        "bool": true
+                    }
                 },
-
-                 "type": {
+                "type": {
                     "displayName": "Display",
                     "type": {
                         "enumeration": [
-                            
                             {
                                 "displayName": "Measure (with target)",
                                 "value": "measure"
@@ -351,8 +373,12 @@
                                 "value": "category"
                             },
                             {
-                                "displayName": "Goal",
+                                "displayName": "Budget",
                                 "value": "goal"
+                            },
+                            {
+                                "displayName": "Budget with percentage",
+                                "value": "budget_with_percentage"
                             },
                             {
                                 "displayName": "Custom",
@@ -361,14 +387,12 @@
                         ]
                     }
                 },
-
                 "text": {
-                   "displayName": "Text",
-                   "type": {
-                       "text": true
-                   }
+                    "displayName": "Text",
+                    "type": {
+                        "text": true
+                    }
                 },
-
                 "fill": {
                     "displayName": "Color",
                     "type": {
@@ -378,7 +402,7 @@
                             }
                         }
                     }
-                }, 
+                },
                 "fillWithBackground": {
                     "displayName": "Color",
                     "type": {
@@ -390,17 +414,15 @@
                             }
                         }
                     }
-                }, 
-
+                },
                 "fontSize": {
                     "displayName": "Text size",
-                    "type": { 
-                        "formatting": { 
-                            "fontSize": true 
-                        } 
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
                     }
                 },
-
                 "fontFamily": {
                     "displayName": "Font family",
                     "type": {
@@ -500,31 +522,69 @@
                         ]
                     }
                 },
-
                 "wordWrap": {
                     "displayName": "Word wrap",
-                    "type": { 
-                        "bool": true 
+                    "type": {
+                        "bool": true
                     }
                 }
             }
         },
-
+        "colorCode": {
+            "displayName": "Color Coding",
+            
+            "properties": {
+                "direction": {
+                    "displayName": "Direction",
+                    "description": "Color to use",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "displayName": "High is Good",
+                                "value": "highisgood"
+                            },
+                            {
+                                "displayName": " Low is Good",
+                                "value": "lowisgood"
+                            }
+                        ]
+                    }
+                },
+                "goodFill": {
+                    "displayName": "Good color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "badFill": {
+                    "displayName": "Bad color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "states": {
             "displayName": "States",
             "properties": {
-
                 "show": {
                     "displayName": "Show",
                     "type": {
-                       "bool": true
+                        "bool": true
                     }
-                }, 
-
+                },
                 "behavior": {
-                   "displayName": "Affect",
-                   "type": {
-                       "enumeration": [
+                    "displayName": "Affect",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "Data label",
                                 "value": "label"
@@ -541,13 +601,13 @@
                                 "displayName": "Background",
                                 "value": "backcolor"
                             }
-                       ]
-                   }
+                        ]
+                    }
                 },
-                 "comparison": {
-                   "displayName": "Comparison",
-                   "type": {
-                         "enumeration": [
+                "comparison": {
+                    "displayName": "Comparison",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": ">",
                                 "value": ">"
@@ -568,14 +628,13 @@
                                 "displayName": "<",
                                 "value": "<"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
-                 "calculate": {
-                   "displayName": "Value type",
-                   "type": {
-                         "enumeration": [
+                "calculate": {
+                    "displayName": "Value type",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "Absolute value",
                                 "value": "absolute"
@@ -588,11 +647,10 @@
                                 "displayName": "Modifier over Target",
                                 "value": "modifier"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
-                 "baseFill": {
+                "baseFill": {
                     "displayName": "Base color",
                     "type": {
                         "fill": {
@@ -601,31 +659,27 @@
                             }
                         }
                     }
-                }, 
-                
-
+                },
                 "fill": {
-                   "displayName": "Color",
-                   "type": {
-                       "fill": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": true
                             }
                         }
-                   }
+                    }
                 },
-
                 "showMessages": {
-                   "displayName": "Messages",
-                   "type": {
-                       "bool": true
-                   }
+                    "displayName": "Messages",
+                    "type": {
+                        "bool": true
+                    }
                 },
-
                 "icon": {
-                   "displayName": "Icon",
-                   "type": {
-                         "enumeration": [
+                    "displayName": "Icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -642,19 +696,17 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
-                },
-
-                "fontSize": {
-                    "displayName": "Messages text size",
-                    "type": { 
-                        "formatting": { 
-                            "fontSize": true 
-                        } 
+                        ]
                     }
                 },
-
+                "fontSize": {
+                    "displayName": "Messages text size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                },
                 "fontFamily": {
                     "displayName": "Message font family",
                     "type": {
@@ -754,42 +806,40 @@
                         ]
                     }
                 },
-
                 "text": {
-                   "displayName": "Message",
-                   "type": {
-                       "text": true
-                   }
+                    "displayName": "Message",
+                    "type": {
+                        "text": true
+                    }
                 },
-
                 "manualState1Fill": {
-                   "displayName": "State A",
-                   "type": {
-                       "fill": {
+                    "displayName": "State A",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": {
                                     "nullable": true
                                 }
                             }
                         }
-                   }
+                    }
                 },
                 "manualState1": {
                     "displayName": "State A value",
                     "type": {
-                       "numeric": true
+                        "numeric": true
                     }
-                }, 
+                },
                 "manualState1Text": {
-                   "displayName": "State A message",
-                   "type": {
-                       "text": true
-                   }
+                    "displayName": "State A message",
+                    "type": {
+                        "text": true
+                    }
                 },
                 "manualState1Icon": {
-                   "displayName": "State A icon",
-                   "type": {
-                         "enumeration": [
+                    "displayName": "State A icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -806,38 +856,37 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
                 "manualState2Fill": {
-                   "displayName": "State B",
-                   "type": {
-                       "fill": {
+                    "displayName": "State B",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": {
                                     "nullable": true
                                 }
                             }
                         }
-                   }
+                    }
                 },
                 "manualState2": {
                     "displayName": "State B value",
                     "type": {
-                       "numeric": true
+                        "numeric": true
                     }
-                }, 
-                "manualState2Text": {
-                   "displayName": "State B message",
-                   "type": {
-                       "text": true
-                   }
                 },
-                 "manualState2Icon": {
-                   "displayName": "State B icon",
-                   "type": {
-                         "enumeration": [
+                "manualState2Text": {
+                    "displayName": "State B message",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "manualState2Icon": {
+                    "displayName": "State B icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -854,40 +903,37 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-                
                 "manualState3Fill": {
-                   "displayName": "State C",
-                   "type": {
-                       "fill": {
+                    "displayName": "State C",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": {
                                     "nullable": true
                                 }
                             }
                         }
-                   }
+                    }
                 },
                 "manualState3": {
                     "displayName": "State C value",
                     "type": {
-                       "numeric": true
+                        "numeric": true
                     }
                 },
-                
                 "manualState3Text": {
-                   "displayName": "State C message",
-                   "type": {
-                       "text": true
-                   }
-                }, 
-                
+                    "displayName": "State C message",
+                    "type": {
+                        "text": true
+                    }
+                },
                 "manualState3Icon": {
-                   "displayName": "State C icon",
-                   "type": {
-                         "enumeration": [
+                    "displayName": "State C icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -904,38 +950,37 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
                 "manualState4Fill": {
-                   "displayName": "State D",
-                   "type": {
-                       "fill": {
+                    "displayName": "State D",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": {
                                     "nullable": true
                                 }
                             }
                         }
-                   }
+                    }
                 },
                 "manualState4": {
                     "displayName": "State D value",
                     "type": {
-                       "numeric": true
+                        "numeric": true
                     }
-                }, 
+                },
                 "manualState4Text": {
-                   "displayName": "State D message",
-                   "type": {
-                       "text": true
-                   }
+                    "displayName": "State D message",
+                    "type": {
+                        "text": true
+                    }
                 },
                 "manualState4Icon": {
-                   "displayName": "State D icon",
-                   "type": {
-                         "enumeration": [
+                    "displayName": "State D icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -952,38 +997,37 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 },
-
                 "manualState5Fill": {
-                   "displayName": "State E",
-                   "type": {
-                       "fill": {
+                    "displayName": "State E",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": {
                                     "nullable": true
                                 }
                             }
                         }
-                   }
+                    }
                 },
                 "manualState5": {
                     "displayName": "State E value",
                     "type": {
-                       "numeric": true
+                        "numeric": true
                     }
-                }, 
+                },
                 "manualState5Text": {
-                   "displayName": "State E message",
-                   "type": {
-                       "text": true
-                   }
+                    "displayName": "State E message",
+                    "type": {
+                        "text": true
+                    }
                 },
                 "manualState5Icon": {
-                   "displayName": "State E icon",
-                   "type": {
-                         "enumeration": [
+                    "displayName": "State E icon",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "None",
                                 "value": ""
@@ -1000,12 +1044,11 @@
                                 "displayName": "Arrow down",
                                 "value": "down"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 }
             }
         },
-
         "trendLine": {
             "displayName": "Trend line",
             "properties": {
@@ -1026,13 +1069,13 @@
                 "weight": {
                     "displayName": "Weight",
                     "type": {
-                       "integer": true
-                   }
+                        "integer": true
+                    }
                 },
                 "interpolation": {
-                     "displayName": "Appearance",
-                     "type": {
-                         "enumeration": [
+                    "displayName": "Appearance",
+                    "type": {
+                        "enumeration": [
                             {
                                 "displayName": "Straight",
                                 "value": "linear"
@@ -1048,20 +1091,19 @@
                             {
                                 "displayName": "Step",
                                 "value": "step-before"
-                             }
-                         ]
-                     }
-                 },
-
+                            }
+                        ]
+                    }
+                },
                 "fill": {
-                   "displayName": "Line color",
-                   "type": {
-                       "fill": {
+                    "displayName": "Line color",
+                    "type": {
+                        "fill": {
                             "solid": {
                                 "color": true
                             }
                         }
-                   }
+                    }
                 },
                 "fillWithBackground": {
                     "displayName": "Line color",
@@ -1076,17 +1118,17 @@
                     }
                 },
                 "curShow": {
-                     "displayName": "Current point",
-                     "type": {
-                         "bool": true
-                     }
-                 },
-                 "showAllPoints": {
-                     "displayName": "Show all points",
-                     "type": {
-                         "bool": true
-                     }
-                 },
+                    "displayName": "Current point",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "showAllPoints": {
+                    "displayName": "Show all points",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "hiShow": {
                     "displayName": "Highest point",
                     "type": {
@@ -1102,7 +1144,7 @@
                             }
                         }
                     }
-                }, 
+                },
                 "loShow": {
                     "displayName": "Lowest point",
                     "type": {
@@ -1128,47 +1170,45 @@
                 "areaFill": {
                     "displayName": "Area color",
                     "type": {
-                         "fill": {
-                           "solid": {
-                               "color": true
-                           }
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
                         }
                     }
                 },
                 "areaTransparency": {
-                   "displayName": "Area transparency",
-                   "type": {
-                       "integer": true
-                   }
+                    "displayName": "Area transparency",
+                    "type": {
+                        "integer": true
+                    }
                 }
-   
             }
         },
-
         "colorBlind": {
             "displayName": "Color Blindness by OKViz",
             "properties": {
                 "vision": {
-                    "displayName" : "Vision",
+                    "displayName": "Vision",
                     "type": {
-                         "enumeration": [
+                        "enumeration": [
                             {
                                 "displayName": "Normal",
                                 "value": "Normal"
                             },
-                             {
+                            {
                                 "displayName": "Protanopia",
                                 "value": "Protanopia"
                             },
-                             {
+                            {
                                 "displayName": "Protanomaly",
                                 "value": "Protanomaly"
                             },
-                             {
+                            {
                                 "displayName": "Deuteranopia",
                                 "value": "Deuteranopia"
                             },
-                             {
+                            {
                                 "displayName": "Deuteranomaly",
                                 "value": "Deuteranomaly"
                             },
@@ -1192,8 +1232,8 @@
                                 "displayName": "Low Contrast",
                                 "value": "LowContrast"
                             }
-                         ]
-                     }
+                        ]
+                    }
                 }
             }
         },
